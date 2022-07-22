@@ -1,11 +1,37 @@
 import logging
 import argparse
+import tempfile
+import os
+import sys
+import logging
+from robot.run import run
+from socketserver import ThreadingMixIn, BaseServer
+from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler, SimpleXMLRPCDispatcher
+import socket
+from OpenSSL import SSL
+from base64 import b64decode
+from threading import Thread, Condition
+from _thread import start_new_thread
+from pprint import pprint
+import string
+import traceback
+import time
+from http.server import BaseHTTPRequestHandler
+from io import StringIO
 
 # Set up the global logger variable
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(module)s -%(levelname)s- %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# static stuff
+DEFAULTKEYFILE = 'privkey.pem'  # Replace with your PEM formatted key file
+DEFAULTCERTFILE = 'cacert.pem'  # Replace with your PEM formatted certificate file
+
+
+
+
 
 
 def get_command_line_params():
@@ -100,9 +126,22 @@ def get_command_line_params():
     robot_user = args.robot_user
     robot_pass = args.robot_pass
 
-if __name__ == "__main__":
-    get_command_line_params()
+    return  robot_log_level, robot_suite, robot_test, robot_include, robot_exclude, robot_debug, robot_host, robot_port, robot_user, robot_pass
 
+
+if __name__ == "__main__":
+    (
+        robot_log_level,
+        robot_suite,
+        robot_test,
+        robot_include,
+        robot_exclude,
+        robot_debug,
+        robot_host,
+        robot_port,
+        robot_user,
+        robot_pass
+    ) = get_command_line_params()
 
 
 

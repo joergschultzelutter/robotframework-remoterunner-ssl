@@ -142,6 +142,7 @@ if __name__ == "__main__":
         robot_user,
         robot_pass
     ) = get_command_line_params()
+    logger.info(robot_host)
 
 
 

@@ -25,6 +25,7 @@ from io import StringIO
 
 ######
 import ssl
+
 ######
 
 # Set up the global logger variable
@@ -72,8 +73,7 @@ class CustomThreadingMixIn:
         """Start a new thread to process the request."""
         t = Thread(target=self.process_request_thread, args=(request, client_address))
         if self.daemon_threads:
-            t.daemon = True
-#            t.setDaemon(1)
+            t.setDaemon(1)
         t.start()
 
 
@@ -193,14 +193,10 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
         ctx = SSL.Context(SSL.SSLv23_METHOD)
         ctx.use_privatekey_file(keyFile)
         ctx.use_certificate_file(certFile)
+
         self.socket = SSL.Connection(
             ctx, socket.socket(self.address_family, self.socket_type)
         )
-        #######
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_OPTIONAL
-        ########
-
         self.server_bind()
         self.server_activate()
 
@@ -234,8 +230,7 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
         request, client_address = self.socket.accept()
         self.rCondition.acquire()
         self.requests += 1
-        self.rCondition.notify_all()
-#        self.rCondition.notifyAll()
+        self.rCondition.notifyAll()
         self.rCondition.release()
         return (request, client_address)
 
@@ -356,3 +351,4 @@ if __name__ == "__main__":
     print("Serving HTTPS on", sa[0], "port", sa[1])
 
     server.startup()
+1

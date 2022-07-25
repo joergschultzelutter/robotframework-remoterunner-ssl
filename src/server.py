@@ -23,6 +23,10 @@ import time
 from http.server import BaseHTTPRequestHandler
 from io import StringIO
 
+######
+import ssl
+######
+
 # Set up the global logger variable
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(module)s -%(levelname)s- %(message)s"
@@ -68,7 +72,8 @@ class CustomThreadingMixIn:
         """Start a new thread to process the request."""
         t = Thread(target=self.process_request_thread, args=(request, client_address))
         if self.daemon_threads:
-            t.setDaemon(1)
+            t.daemon = True
+#            t.setDaemon(1)
         t.start()
 
 
@@ -191,6 +196,11 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
         self.socket = SSL.Connection(
             ctx, socket.socket(self.address_family, self.socket_type)
         )
+        #######
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_OPTIONAL
+        ########
+
         self.server_bind()
         self.server_activate()
 
@@ -224,7 +234,8 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
         request, client_address = self.socket.accept()
         self.rCondition.acquire()
         self.requests += 1
-        self.rCondition.notifyAll()
+        self.rCondition.notify_all()
+#        self.rCondition.notifyAll()
         self.rCondition.release()
         return (request, client_address)
 

@@ -40,6 +40,9 @@ DEFAULT_PORT = 1471
 
 class RobotFrameworkServer:
 
+    def give_me_time(self):
+        return time.asctime()
+
     def __init__(self, debug=False):
         """
         Constructor for RobotFrameworkServer
@@ -175,10 +178,6 @@ class RobotFrameworkServer:
             output_xml = read_file_from_disk(output_xml_path)
 
         return output_xml, log_html, report_html
-
-class Services:
-    def give_me_time(self):
-        return time.asctime()
 
 
 class CustomThreadingMixIn:
@@ -317,7 +316,8 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
                     username, foo, password = (
                         b64decode(encoded).decode("UTF-8").partition(":")
                     )
-                    if username == "admin":
+#                    if username == "admin":
+                    if username == robot_user and password == robot_pass:
                         return True
                     else:
                         myself.send_error(401, "Authentication failed")
@@ -339,7 +339,7 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
 
         self.funcs = {}
         self.register_introspection_functions()
-        self.register_instance(Services())
+        self.register_instance(RobotFrameworkServer())
 
         # requests count and condition, to allow for keyboard quit via CTL-C
         self.requests = 0

@@ -1,5 +1,21 @@
 from xmlrpc.client import ServerProxy
 import argparse
+from robot.api import TestSuiteBuilder
+from robot.libraries import STDLIBS
+from robot.utils.robotpath import find_file
+import os
+import logging
+from utils import (
+    normalize_xmlrpc_address,
+    calculate_ts_parent_path,
+    read_file_from_disk,
+)
+
+# Set up the global logger variable
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(module)s -%(levelname)s- %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 def get_command_line_params():

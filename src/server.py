@@ -34,12 +34,11 @@ logger = logging.getLogger(__name__)
 DEFAULTKEYFILE = "privkey.pem"  # Replace with your PEM formatted key file
 DEFAULTCERTFILE = "cacert.pem"  # Replace with your PEM formatted certificate file
 
-DEFAULT_ADDRESS = '0.0.0.0'
+DEFAULT_ADDRESS = "0.0.0.0"
 DEFAULT_PORT = 1471
 
 
 class RobotFrameworkServer:
-
     def give_me_time(self):
         return time.asctime()
 
@@ -75,7 +74,9 @@ class RobotFrameworkServer:
                 logger.setLevel(logging.DEBUG)
 
             # Save all suites & dependencies to disk
-            workspace_dir = RobotFrameworkServer._create_workspace(test_suites, dependencies)
+            workspace_dir = RobotFrameworkServer._create_workspace(
+                test_suites, dependencies
+            )
 
             # Change the CWD to the workspace
             old_cwd = os.getcwd()
@@ -84,24 +85,34 @@ class RobotFrameworkServer:
 
             # Execute the robot run
             std_out_err = StringIO()
-            logger.debug('Beginning Robot Run.')
-            logger.debug('Robot Run Args: %s', str(robot_args))
-            ret_code = run('.',
-                           stdout=std_out_err,
-                           stderr=std_out_err,
-                           outputdir=workspace_dir,
-                           name='Root',
-                           **robot_args)
-            logger.debug('Robot Run finished')
+            logger.debug("Beginning Robot Run.")
+            logger.debug("Robot Run Args: %s", str(robot_args))
+            ret_code = run(
+                ".",
+                stdout=std_out_err,
+                stderr=std_out_err,
+                outputdir=workspace_dir,
+                name="Root",
+                **robot_args
+            )
+            logger.debug("Robot Run finished")
 
             # Read the test artifacts from disk
-            output_xml, log_html, report_html = RobotFrameworkServer._read_robot_artifacts_from_disk(workspace_dir)
+            (
+                output_xml,
+                log_html,
+                report_html,
+            ) = RobotFrameworkServer._read_robot_artifacts_from_disk(workspace_dir)
 
-            ret_val = {'std_out_err': xmlrpc_client.Binary(std_out_err.getvalue().encode('utf-8')),
-                       'output_xml': xmlrpc_client.Binary(output_xml.encode('utf-8')),
-                       'log_html': xmlrpc_client.Binary(log_html.encode('utf-8')),
-                       'report_html': xmlrpc_client.Binary(report_html.encode('utf-8')),
-                       'ret_code': ret_code}
+            ret_val = {
+                "std_out_err": xmlrpc_client.Binary(
+                    std_out_err.getvalue().encode("utf-8")
+                ),
+                "output_xml": xmlrpc_client.Binary(output_xml.encode("utf-8")),
+                "log_html": xmlrpc_client.Binary(log_html.encode("utf-8")),
+                "report_html": xmlrpc_client.Binary(report_html.encode("utf-8")),
+                "ret_code": ret_code,
+            }
         except Exception as err:
             # Log here because the RPC framework doesn't give the client a full stacktrace
             logging.error(err)
@@ -116,7 +127,7 @@ class RobotFrameworkServer:
             if workspace_dir and not debug:
                 shutil.rmtree(workspace_dir)
 
-        logger.debug('End of RPC function')
+        logger.debug("End of RPC function")
         # Revert the logger back to its original level
         logger.setLevel(old_log_level)
         return ret_val
@@ -133,19 +144,19 @@ class RobotFrameworkServer:
         :rtype: str
         """
         workspace_dir = tempfile.mkdtemp()
-        logger.debug('Created workspace at: %s', workspace_dir)
+        logger.debug("Created workspace at: %s", workspace_dir)
 
         for suite_name, suite in test_suites.items():
-            full_dir = os.path.join(workspace_dir, suite.get('path'))
+            full_dir = os.path.join(workspace_dir, suite.get("path"))
             if not os.path.exists(full_dir):
                 os.makedirs(full_dir)
             full_path = os.path.join(full_dir, suite_name)
-            logger.debug('Writing suite to disk: %s', full_path)
-            write_file_to_disk(full_path, suite.get('suite_data'))
+            logger.debug("Writing suite to disk: %s", full_path)
+            write_file_to_disk(full_path, suite.get("suite_data"))
 
         for dep_name, dep_data in dependencies.items():
             full_path = os.path.join(workspace_dir, dep_name)
-            logger.debug('Writing dependency to disk: %s', full_path)
+            logger.debug("Writing dependency to disk: %s", full_path)
             write_file_to_disk(full_path, dep_data)
 
         return workspace_dir
@@ -159,22 +170,22 @@ class RobotFrameworkServer:
         :return: File data (output xml, log html, report html)
         :rtype: tuple
         """
-        log_html = ''
-        log_html_path = os.path.join(workspace_dir, 'log.html')
+        log_html = ""
+        log_html_path = os.path.join(workspace_dir, "log.html")
         if os.path.exists(log_html_path):
-            logger.debug('Reading log.html file off disk from: %s', log_html_path)
+            logger.debug("Reading log.html file off disk from: %s", log_html_path)
             log_html = read_file_from_disk(log_html_path)
 
-        report_html = ''
-        report_html_path = os.path.join(workspace_dir, 'report.html')
+        report_html = ""
+        report_html_path = os.path.join(workspace_dir, "report.html")
         if os.path.exists(report_html_path):
-            logger.debug('Reading report.html file off disk from: %s', report_html_path)
+            logger.debug("Reading report.html file off disk from: %s", report_html_path)
             report_html = read_file_from_disk(report_html_path)
 
-        output_xml = ''
-        output_xml_path = os.path.join(workspace_dir, 'output.xml')
+        output_xml = ""
+        output_xml_path = os.path.join(workspace_dir, "output.xml")
         if os.path.exists(output_xml_path):
-            logger.debug('Reading output.xml file off disk from: %s', output_xml_path)
+            logger.debug("Reading output.xml file off disk from: %s", output_xml_path)
             output_xml = read_file_from_disk(output_xml_path)
 
         return output_xml, log_html, report_html
@@ -316,7 +327,7 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
                     username, foo, password = (
                         b64decode(encoded).decode("UTF-8").partition(":")
                     )
-#                    if username == "admin":
+                    #                    if username == "admin":
                     if username == robot_user and password == robot_pass:
                         return True
                     else:
@@ -414,22 +425,6 @@ def get_command_line_params():
     )
 
     parser.add_argument(
-        "--suite", action="extend", nargs="+", dest="robot_suite", type=str
-    )
-
-    parser.add_argument(
-        "--test", action="extend", nargs="+", dest="robot_test", type=str
-    )
-
-    parser.add_argument(
-        "--include", action="extend", nargs="+", dest="robot_include", type=str
-    )
-
-    parser.add_argument(
-        "--exclude", action="extend", nargs="+", dest="robot_exclude", type=str
-    )
-
-    parser.add_argument(
         "--debug",
         dest="robot_debug",
         action="store_true",
@@ -439,10 +434,6 @@ def get_command_line_params():
     args = parser.parse_args()
 
     robot_log_level = args.robot_log_level
-    robot_suite = args.robot_suite
-    robot_test = args.robot_test
-    robot_include = args.robot_include
-    robot_exclude = args.robot_exclude
     robot_debug = args.robot_debug
     robot_host = args.robot_host
     robot_port = args.robot_port
@@ -453,10 +444,6 @@ def get_command_line_params():
 
     return (
         robot_log_level,
-        robot_suite,
-        robot_test,
-        robot_include,
-        robot_exclude,
         robot_debug,
         robot_host,
         robot_port,
@@ -470,10 +457,6 @@ def get_command_line_params():
 if __name__ == "__main__":
     (
         robot_log_level,
-        robot_suite,
-        robot_test,
-        robot_include,
-        robot_exclude,
         robot_debug,
         robot_host,
         robot_port,

@@ -1,3 +1,29 @@
+#!/opt/local/bin/python3
+#
+# robotframework-remoterunner-mt: server
+# Author: Joerg Schultze-Lutter, 2021
+#
+# Parts of this software are based on the following open source projects:
+#
+# robotframework-remoterunner (https://github.com/chrisBrookes93/robotframework-remoterunner)
+# python3-xmlrpc-ssl-basic-auth (https://github.com/etopian/python3-xmlrpc-ssl-basic-auth)
+#
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
 import logging
 import argparse
 import tempfile
@@ -40,8 +66,22 @@ DEFAULT_PORT = 1471
 
 
 class RobotFrameworkServer:
-    def give_me_time(self):
-        return time.asctime()
+
+    def test_connection(self):
+        """
+        Simple test method which returns an 'ok' string to the user
+        Prior to calling this event, certificates and user/pass have
+        already been validated
+
+        Parameters
+        ==========
+
+        Returns
+        =======
+        msg: 'str'
+                Fixed 'ok' response message
+        """
+        return "OK"
 
     def __init__(self, debug=False):
         """
@@ -328,7 +368,6 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
                     username, foo, password = (
                         b64decode(encoded).decode("UTF-8").partition(":")
                     )
-                    #                    if username == "admin":
                     if username == robot_user and password == robot_pass:
                         return True
                     else:

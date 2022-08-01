@@ -66,10 +66,9 @@ DEFAULT_PORT = 1471
 
 
 class RobotFrameworkServer:
-
     def test_connection(self):
         """
-        Simple test method which returns an 'ok' string to the user
+        Simple test method which returns an 'OK' string to the user
         Prior to calling this event, certificates and user/pass have
         already been validated
 

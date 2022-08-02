@@ -412,6 +412,23 @@ def get_command_line_params():
     robot_log_file = args.robot_log_file
     robot_report_file = args.robot_report_file
 
+    # If the user has specified multiple values for the same parameter,
+    # we have received a list. However, the native remoterunner code expects
+    # a colon-separated string so let's transpose that info if necessary
+    # Certainly not pretty code but it works
+    if isinstance(robot_test, list):
+        robot_test = ":".join(robot_test)
+    if isinstance(robot_suite, list):
+        robot_suite = ":".join(robot_suite)
+    if isinstance(robot_include, list):
+        robot_include = ":".join(robot_include)
+    if isinstance(robot_exclude, list):
+        robot_exclude = ":".join(robot_exclude)
+    if isinstance(robot_input_dir, list):
+        robot_input_dir = ":".join(robot_input_dir)
+    if isinstance(robot_extension, list):
+        robot_extension = ":".join(robot_extension)
+
     return (
         robot_log_level,
         robot_suite,
@@ -434,6 +451,12 @@ def get_command_line_params():
 
 
 if __name__ == "__main__":
+
+    # Get the input parameters. We use a different parser than the
+    # original robotframework-remoterunner. Our args parser mimicks the
+    # original parser's behavior, meaning that e.g. if the user has
+    # specified multiple include tags, our parameter's value will
+    # be a colon-separated string and not a list item
     (
         robot_log_level,
         robot_suite,
@@ -483,10 +506,27 @@ if __name__ == "__main__":
             raise
         sys.exit(0)
 
+    # Create the robot args parameter directory and add the
+    # parameters whereas  present
+    robot_args = {"loglevel": robot_log_level}
+    if robot_include:
+        robot_args["include"] = robot_include
+    if robot_exclude:
+        robot_args["exclude"] = robot_exclude
+    if robot_test:
+        robot_args["test"] = robot_test
+    if robot_suite:
+        robot_args["suite"] = robot_suite
+    if robot_suite:
+        robot_args["extension"] = robot_extension
+
     # Default branch for executing actual tests
     rfs = RemoteFrameworkClient(address=remote_connect_string, debug=robot_debug)
     result = rfs.execute_run(
-        robot_suite, robot_extension, arg_parser.suite, arg_parser.robot_run_args
+        suite_list=robot_input_dir,
+        extensions=robot_extension,
+        include_suites=robot_suite,
+        robot_arg_dict=robot_args,
     )
     # Print the robot stdout/stderr
     logger.info("\nRobot execution response:")

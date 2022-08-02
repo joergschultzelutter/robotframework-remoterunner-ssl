@@ -456,7 +456,7 @@ if __name__ == "__main__":
     # original robotframework-remoterunner. Our args parser mimicks the
     # original parser's behavior, meaning that e.g. if the user has
     # specified multiple include tags, our parameter's value will
-    # be a colon-separated string and not a list item
+    # be a colon-separated string and no longer a list item
     (
         robot_log_level,
         robot_suite,

@@ -237,9 +237,16 @@ class RemoteFrameworkClient:
         return new_file_data
 
 
-def check_if_dir_exists(dir: str):
+def check_if_input_dir_exists(dir: str):
     if not os.path.isdir(dir):
-        raise ValueError(f"Value '{dir}' is not a valid directory")
+        raise ValueError(f"Value '{dir}' is not a valid input directory")
+    else:
+        return dir
+
+
+def check_if_output_dir_exists(dir: str):
+    if not os.path.isdir(dir):
+        raise ValueError(f"Value '{dir}' is not a valid output directory")
     else:
         return dir
 
@@ -247,13 +254,37 @@ def check_if_dir_exists(dir: str):
 def get_command_line_params():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--host", dest="robot_host", default="localhost", type=str)
+    parser.add_argument(
+        "--host",
+        dest="robot_host",
+        default="localhost",
+        type=str,
+        help="IP or Hostname of the server to execute the robot run on. Default value = localhost",
+    )
 
-    parser.add_argument("--port", dest="robot_port", default=8111, type=int)
+    parser.add_argument(
+        "--port",
+        dest="robot_port",
+        default=8111,
+        type=int,
+        help="Port number of the server to execute the robot run on. Default value = 8111",
+    )
 
-    parser.add_argument("--user", dest="robot_user", default="admin", type=str)
+    parser.add_argument(
+        "--user",
+        dest="robot_user",
+        default="admin",
+        type=str,
+        help="Server user name. Default value = admin",
+    )
 
-    parser.add_argument("--pass", dest="robot_pass", default="admin", type=str)
+    parser.add_argument(
+        "--pass",
+        dest="robot_pass",
+        default="admin",
+        type=str,
+        help="Server user passwort. Default value = admin",
+    )
 
     parser.add_argument(
         "--log-level",
@@ -261,37 +292,66 @@ def get_command_line_params():
         default="WARN",
         type=str.upper,
         dest="robot_log_level",
-        help="",
+        help="Threshold level for logging. Available levels: TRACE, DEBUG, INFO (default), WARN, NONE (no logging). Use syntax `LOGLEVEL:DEFAULT` to define the default visible log level in log files. Examples: --loglevel DEBUG --loglevel DEBUG:INFO",
     )
 
     parser.add_argument(
-        "--suite", action="extend", nargs="+", dest="robot_suite", type=str
+        "--suite",
+        action="extend",
+        nargs="+",
+        dest="robot_suite",
+        type=str,
+        help="Select test suites to run by name. When this option is used with --test, --include or --exclude, only test cases in matching suites and also matching other filtering criteria are selected. Name can be a simple pattern similarly as with --test and it can contain parent name separated with a dot. You can specify this parameter multiple times, if necessary.",
     )
 
     parser.add_argument(
-        "--test", action="extend", nargs="+", dest="robot_test", type=str
+        "--test",
+        action="extend",
+        nargs="+",
+        dest="robot_test",
+        type=str,
+        help="Select test cases to run by name or long name. Name is case insensitive and it can also be a simple pattern where `*` matches anything and `?` matches any char. You can specify this parameter multiple times, if necessary.",
     )
 
     parser.add_argument(
-        "--include", action="extend", nargs="+", dest="robot_include", type=str
+        "--include",
+        action="extend",
+        nargs="+",
+        dest="robot_include",
+        type=str,
+        help="Select test cases to run by tag. Similarly as name with --test, tag is case and space insensitive and it is possible to use patterns with `*` and `?` as wildcards. Tags and patterns can also be combined together with `AND`, `OR`, and `NOT` operators. Examples: --include foo, --include bar*, --include fooANDbar*",
     )
 
     parser.add_argument(
-        "--exclude", action="extend", nargs="+", dest="robot_exclude", type=str
+        "--exclude",
+        action="extend",
+        nargs="+",
+        dest="robot_exclude",
+        type=str,
+        help="Select test cases not to run by tag. These tests are not run even if included with --include. Tags are matched using the rules explained with --include.",
+    )
+
+    parser.add_argument(
+        "--extension",
+        action="extend",
+        nargs="+",
+        dest="robot_extension",
+        type="str",
+        help="Parse only files with this extension when executing a directory. Has no effect when running individual files or when using resource files. You can specify this parameter multiple times, if necessary. Examples: `--extension robot`",
     )
 
     parser.add_argument(
         "--debug",
         dest="robot_debug",
         action="store_true",
-        help="Enable debug mode",
+        help="Run in debug mode. This will enable debug logging and does not cleanup the workspace directory on the remote machine after test execution",
     )
 
     parser.add_argument(
         "--test-connection",
         dest="robot_test_connection",
         action="store_true",
-        help="Returns simple 'ok' string if a connection to the server could be established and user/pass are ok",
+        help="Use this test option to check if both client and server are properly configured. Returns a simple 'ok' string if the client was able to establish a connection to the server and user/pass were ok",
     )
 
     parser.add_argument(
@@ -299,28 +359,37 @@ def get_command_line_params():
         dest="robot_output_dir",
         type=check_if_dir_exists,
         default=".",
-        help="Output directory",
+        help="Output directory which will host your output files. Default: current directory",
     )
+
+    parser.add_argument(
+        "--input-dir",
+        dest="robot_input_dir",
+        type=check_if_dir_exists,
+        default=".",
+        help="Input directory (containing your robot tests). Parameter can be specified multiple times",
+    )
+
     parser.add_argument(
         "--output-file",
         dest="robot_output_file",
         type=str,
         default="remote_output.xml",
-        help="Robot Framework Output File",
+        help="Robot Framework output file name. Default name = remote_output.xml",
     )
     parser.add_argument(
         "--log-file",
         dest="robot_log_file",
         type=str,
         default="remote_log.html",
-        help="Robot Framework Log File",
+        help="Robot Framework log file name. Default name = remote_log.html",
     )
     parser.add_argument(
         "--report-file",
         dest="robot_report_file",
         type=str,
         default="remote_report.html",
-        help="Robot Framework Report File",
+        help="Robot Framework report file name. Default name = remote_report.html",
     )
 
     args = parser.parse_args()
@@ -337,6 +406,8 @@ def get_command_line_params():
     robot_pass = args.robot_pass
     robot_test_connection = args.robot_test_connection
     robot_output_dir = args.robot_output_dir
+    robot_input_dir = args.robot_input_dir
+    robot_extension = args.robot_extension
     robot_output_file = args.robot_output_file
     robot_log_file = args.robot_log_file
     robot_report_file = args.robot_report_file
@@ -354,6 +425,8 @@ def get_command_line_params():
         robot_pass,
         robot_test_connection,
         robot_output_dir,
+        robot_input_dir,
+        robot_extension,
         robot_output_file,
         robot_log_file,
         robot_report_file,
@@ -374,6 +447,8 @@ if __name__ == "__main__":
         robot_pass,
         robot_test_connection,
         robot_output_dir,
+        robot_input_dir,
+        robot_extension,
         robot_output_file,
         robot_log_file,
         robot_report_file,
@@ -385,11 +460,15 @@ if __name__ == "__main__":
         level=level, format="%(asctime)s %(module)s -%(levelname)s- %(message)s"
     )
 
+    # Create the https connection string
     remote_connect_string = (
         f"https://{robot_user}:{robot_pass}@{robot_host}:{robot_port}"
     )
 
     # Check if user wants to execute plain connection test
+    # If yes, connect to the server and execute the test method
+    # Returns simple "ok" string if SSL connection was ok and
+    # client user/pw matched server user/pw
     if robot_test_connection:
         p = ServerProxy(remote_connect_string)
         try:
@@ -400,38 +479,37 @@ if __name__ == "__main__":
             print(f"Error message: {err.errmsg}")
         except ConnectionRefusedError as err:
             print("Connection refused!")
+        except:
+            raise
         sys.exit(0)
-    else:
-        rfs = RemoteFrameworkClient(address=remote_connect_string, debug=robot_debug)
-        result = rfs.execute_run(
-            robot_suite, robot_extension, arg_parser.suite, arg_parser.robot_run_args
-        )
-        # Print the robot stdout/stderr
-        logger.info("\nRobot execution response:")
-        logger.info(result.get("std_out_err"))
 
-        output_dir = arg_parser.outputdir or "."
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+    # Default branch for executing actual tests
+    rfs = RemoteFrameworkClient(address=remote_connect_string, debug=robot_debug)
+    result = rfs.execute_run(
+        robot_suite, robot_extension, arg_parser.suite, arg_parser.robot_run_args
+    )
+    # Print the robot stdout/stderr
+    logger.info("\nRobot execution response:")
+    logger.info(result.get("std_out_err"))
 
-        # Write the log html, report html, output xml
-        if result.get("output_xml"):
-            output_xml_path = arg_parser.get_output_xml_output_location()
-            write_file_to_disk(
-                output_xml_path, result["output_xml"].data.decode("utf-8")
-            )
-            logger.info("Local Output:  %s", output_xml_path)
+    output_dir = arg_parser.outputdir or "."
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-        if result.get("log_html"):
-            log_html_path = arg_parser.get_log_html_output_location()
-            write_file_to_disk(log_html_path, result["log_html"].data.decode("utf-8"))
-            logger.info("Local Log:     %s", log_html_path)
+    # Write the log html, report html, output xml
+    if result.get("output_xml"):
+        output_xml_path = arg_parser.get_output_xml_output_location()
+        write_file_to_disk(output_xml_path, result["output_xml"].data.decode("utf-8"))
+        logger.info("Local Output:  %s", output_xml_path)
 
-        if result.get("report_html"):
-            report_html_path = arg_parser.get_report_html_output_location()
-            write_file_to_disk(
-                report_html_path, result["report_html"].data.decode("utf-8")
-            )
-            logger.info("Local Report:  %s", report_html_path)
+    if result.get("log_html"):
+        log_html_path = arg_parser.get_log_html_output_location()
+        write_file_to_disk(log_html_path, result["log_html"].data.decode("utf-8"))
+        logger.info("Local Log:     %s", log_html_path)
 
-        sys.exit(result.get("ret_code", 1))
+    if result.get("report_html"):
+        report_html_path = arg_parser.get_report_html_output_location()
+        write_file_to_disk(report_html_path, result["report_html"].data.decode("utf-8"))
+        logger.info("Local Report:  %s", report_html_path)
+
+    sys.exit(result.get("ret_code", 1))

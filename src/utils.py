@@ -111,6 +111,8 @@ def resolve_output_path(filename: str, output_dir: str):
     ==========
     filename : 'str'
         Name of the file e.g. log.html
+    output_dir: 'str'
+        name / path of the future output directory
 
     Returns
     =======

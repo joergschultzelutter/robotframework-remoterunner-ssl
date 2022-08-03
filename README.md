@@ -1,15 +1,15 @@
 # robotframework-remoterunner-mt
 
-This is a blend of [chrisBrookes93](https://github.com/chrisBrookes93)'s [robotframework-remoterunner](https://github.com/chrisBrookes93/robotframework-remoterunner) and the [XMLRPC SSL Basic Auth](https://github.com/etopian/python3-xmlrpc-ssl-basic-auth) XMLRPC SSL server from [Etopian](https://github.com/etopian/), providing a remote multithreaded XMLRPC SSL server with basic auth authorization to Robot Framework users. 
+This is a port of [chrisBrookes93](https://github.com/chrisBrookes93)'s [robotframework-remoterunner](https://github.com/chrisBrookes93/robotframework-remoterunner) to  [Etopian](https://github.com/etopian/)'s [XMLRPC server](https://github.com/etopian/python3-xmlrpc-ssl-basic-auth), providing a remote multithreaded XMLRPC SSL server with basic auth authorization to Robot Framework users. 
 
-## Generate the certificates
+## Certificate generation
 
-Run the [genpubkey.sh](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/blob/master/src/genpubkey.sh) script.
+- Run the [genpubkey.sh](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/blob/master/src/genpubkey.sh) script.
+- For testing on localhost, you can keep all defaults as is. Exception: set the ```FQDN``` setting to value ```localhost``` for both certificates
 
 ## Testing on localhost
 
-- When generating the certificates, set the FQDN to 'localhost' for both certificates
-- Set the following environment variables for __both__ server _and_ client sessions:
+Remember to set the following environment variables for __both__ server _and_ client sessions:
 
 ```bash
     export SSL_CERT_FILE=/path/to/your/cacert.pem

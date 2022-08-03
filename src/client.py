@@ -34,8 +34,11 @@ import logging
 from utils import (
     calculate_ts_parent_path,
     read_file_from_disk,
+    resolve_output_path,
+    write_file_to_disk,
 )
 import sys
+import shutil
 
 
 # Set up the global logger variable
@@ -45,7 +48,7 @@ IMPORT_LINE_REGEX = re.compile("(Resource|Library)([\\s]+)([^[\\n\\r]*)([\\s]+)"
 
 
 class RemoteFrameworkClient:
-    def __init__(self, address, debug=False):
+    def __init__(self, remote_connect_string: str, debug=False):
         """
         Constructor for RemoteFrameworkClient
 
@@ -56,6 +59,7 @@ class RemoteFrameworkClient:
         :type debug: bool
         """
         self._debug = debug
+        self._remote_connect_string = remote_connect_string
         self._dependencies = {}
         self._suites = {}
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
@@ -66,7 +70,6 @@ class RemoteFrameworkClient:
         extensions: str,
         include_suites: list,
         robot_arg_dict: dict,
-        remote_connect_string: str,
     ):
         """
         Sources a series of test suites and then makes the RPC call to the
@@ -97,9 +100,9 @@ class RemoteFrameworkClient:
         self._package_suite_hierarchy(suite)
 
         # Make the RPC
-        logger.info("Connecting to: %s", remote_connect_string)
+        logger.info("Connecting to: %s", self._remote_connect_string)
 
-        p = ServerProxy(remote_connect_string)
+        p = ServerProxy(self._remote_connect_string)
         try:
             response = p.execute_robot_run(
                 self._suites, self._dependencies, robot_arg_dict, self._debug
@@ -201,12 +204,8 @@ class RemoteFrameworkClient:
         :return: Dictionary containing the suite file data and path from the root directory
         :rtype: dict
         """
-        if isinstance(source, six.string_types):
-            file_path = source
-            is_test_suite = False
-        else:
-            file_path = source.source
-            is_test_suite = True
+        file_path = source.source
+        is_test_suite = True
 
         modified_file_lines = []
         # Read the actual file from disk
@@ -358,6 +357,7 @@ def get_command_line_params():
         nargs="+",
         dest="robot_extension",
         type=str,
+        default="robot:txt:resource",
         help="Parse only files with this extension when executing a directory. Has no effect when running individual files or when using resource files. You can specify this parameter multiple times, if necessary. Examples: `--extension robot`",
     )
 
@@ -554,35 +554,42 @@ if __name__ == "__main__":
         robot_args["extension"] = robot_extension
 
     # Default branch for executing actual tests
-    rfs = RemoteFrameworkClient(address=remote_connect_string, debug=robot_debug)
+    rfs = RemoteFrameworkClient(
+        remote_connect_string=remote_connect_string, debug=robot_debug
+    )
     result = rfs.execute_run(
         suite_list=robot_input_dir,
         extensions=robot_extension,
         include_suites=robot_suite,
         robot_arg_dict=robot_args,
-        remote_connect_string=remote_connect_string,
     )
     # Print the robot stdout/stderr
     logger.info("\nRobot execution response:")
     logger.info(result.get("std_out_err"))
 
-    output_dir = arg_parser.outputdir or "."
+    output_dir = robot_output_dir
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # Write the log html, report html, output xml
     if result.get("output_xml"):
-        output_xml_path = arg_parser.get_output_xml_output_location()
+        output_xml_path = resolve_output_path(
+            filename=robot_output_file, output_dir=robot_output_dir
+        )
         write_file_to_disk(output_xml_path, result["output_xml"].data.decode("utf-8"))
         logger.info("Local Output:  %s", output_xml_path)
 
     if result.get("log_html"):
-        log_html_path = arg_parser.get_log_html_output_location()
+        log_html_path = resolve_output_path(
+            filename=robot_log_file, output_dir=robot_output_dir
+        )
         write_file_to_disk(log_html_path, result["log_html"].data.decode("utf-8"))
         logger.info("Local Log:     %s", log_html_path)
 
     if result.get("report_html"):
-        report_html_path = arg_parser.get_report_html_output_location()
+        report_html_path = resolve_output_path(
+            filename=robot_report_file, output_dir=robot_output_dir
+        )
         write_file_to_disk(report_html_path, result["report_html"].data.decode("utf-8"))
         logger.info("Local Report:  %s", report_html_path)
 

@@ -44,25 +44,6 @@ def write_file_to_disk(path, file_contents, encoding="utf-8"):
         file_handle.write(unicode(file_contents))
 
 
-def normalize_xmlrpc_address(address, default_port):
-    """
-    Normalises the server address by pre-pending with http:// if missing and appending :default_port if missing
-
-    :param address: Address to normalise
-    :type address: str
-    :param default_port: Default port to append if missing
-    :type default_port: int
-
-    :return: Normalised address
-    :rtype: str
-    """
-    if not re.match(re.compile(PORT_INC_REGEX), address):
-        address = "{}:{}".format(address, default_port)
-    if not address.lower().startswith("http"):
-        address = "http://{}".format(address)
-    return address
-
-
 def calculate_ts_parent_path(suite):
     """
     Parses up a test suite's ancestry and builds up a file path. This will then be used to create the correct test
@@ -85,3 +66,25 @@ def calculate_ts_parent_path(suite):
 
     # Stick with unix style slashes for consistency
     return os.path.join(*reversed(family_tree)).replace("\\", "/")
+
+
+def resolve_output_path(filename: str, output_dir: str):
+    """
+    Determine a path to output a file artifact based on whether the user specified the specific path
+
+    :param filename: Name of the file e.g. log.html
+    :type filename: str
+
+    :return: Absolute path of where to save the test artifact
+    :rtype: str
+    """
+    ret_val = filename
+
+    if not os.path.isabs(filename):
+        ret_val = os.path.abspath(os.path.join(output_dir, filename))
+
+    return os.path.normpath(ret_val)
+
+
+if __name__ == "__main__":
+    pass

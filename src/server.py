@@ -37,6 +37,7 @@ from xmlrpc.server import (
     SimpleXMLRPCRequestHandler,
     SimpleXMLRPCDispatcher,
 )
+from xmlrpc.client import Binary
 import socket
 from OpenSSL import SSL
 from base64 import b64decode
@@ -49,6 +50,7 @@ import time
 from http.server import BaseHTTPRequestHandler
 from io import StringIO
 from utils import write_file_to_disk, read_file_from_disk
+import shutil
 
 
 # Set up the global logger variable
@@ -125,17 +127,17 @@ class RobotFrameworkServer:
 
             # Execute the robot run
             std_out_err = StringIO()
-            logger.debug("Beginning Robot Run.")
-            logger.debug("Robot Run Args: %s", str(robot_args))
+            logger.debug(msg="Beginning Robot Run.")
+            logger.debug(msg=f"Robot Run Args: {str(robot_args)}")
             ret_code = run(
                 ".",
                 stdout=std_out_err,
                 stderr=std_out_err,
                 outputdir=workspace_dir,
                 name="Root",
-                **robot_args
+                **robot_args,
             )
-            logger.debug("Robot Run finished")
+            logger.debug(msg="Robot Run finished")
 
             # Read the test artifacts from disk
             (
@@ -145,12 +147,10 @@ class RobotFrameworkServer:
             ) = RobotFrameworkServer._read_robot_artifacts_from_disk(workspace_dir)
 
             ret_val = {
-                "std_out_err": xmlrpc_client.Binary(
-                    std_out_err.getvalue().encode("utf-8")
-                ),
-                "output_xml": xmlrpc_client.Binary(output_xml.encode("utf-8")),
-                "log_html": xmlrpc_client.Binary(log_html.encode("utf-8")),
-                "report_html": xmlrpc_client.Binary(report_html.encode("utf-8")),
+                "std_out_err": Binary(std_out_err.getvalue().encode("utf-8")),
+                "output_xml": Binary(output_xml.encode("utf-8")),
+                "log_html": Binary(log_html.encode("utf-8")),
+                "report_html": Binary(report_html.encode("utf-8")),
                 "ret_code": ret_code,
             }
         except Exception as err:
@@ -167,7 +167,7 @@ class RobotFrameworkServer:
             if workspace_dir and not debug:
                 shutil.rmtree(workspace_dir)
 
-        logger.debug("End of RPC function")
+        logger.debug(msg="End of RPC function")
         # Revert the logger back to its original level
         logger.setLevel(old_log_level)
         return ret_val
@@ -184,19 +184,19 @@ class RobotFrameworkServer:
         :rtype: str
         """
         workspace_dir = tempfile.mkdtemp()
-        logger.debug("Created workspace at: %s", workspace_dir)
+        logger.debug(msg=f"Created workspace at: {workspace_dir}")
 
         for suite_name, suite in test_suites.items():
             full_dir = os.path.join(workspace_dir, suite.get("path"))
             if not os.path.exists(full_dir):
                 os.makedirs(full_dir)
             full_path = os.path.join(full_dir, suite_name)
-            logger.debug("Writing suite to disk: %s", full_path)
+            logger.debug(msg=f"Writing suite to disk: {full_path}")
             write_file_to_disk(full_path, suite.get("suite_data"))
 
         for dep_name, dep_data in dependencies.items():
             full_path = os.path.join(workspace_dir, dep_name)
-            logger.debug("Writing dependency to disk: %s", full_path)
+            logger.debug(msg=f"Writing dependency to disk: {full_path}")
             write_file_to_disk(full_path, dep_data)
 
         return workspace_dir
@@ -213,19 +213,23 @@ class RobotFrameworkServer:
         log_html = ""
         log_html_path = os.path.join(workspace_dir, "log.html")
         if os.path.exists(log_html_path):
-            logger.debug("Reading log.html file off disk from: %s", log_html_path)
+            logger.debug(msg=f"Reading log.html file off disk from: {log_html_path}")
             log_html = read_file_from_disk(log_html_path)
 
         report_html = ""
         report_html_path = os.path.join(workspace_dir, "report.html")
         if os.path.exists(report_html_path):
-            logger.debug("Reading report.html file off disk from: %s", report_html_path)
+            logger.debug(
+                msg=f"Reading report.html file off disk from: {report_html_path}"
+            )
             report_html = read_file_from_disk(report_html_path)
 
         output_xml = ""
         output_xml_path = os.path.join(workspace_dir, "output.xml")
         if os.path.exists(output_xml_path):
-            logger.debug("Reading output.xml file off disk from: %s", output_xml_path)
+            logger.debug(
+                msg=f"Reading output.xml file off disk from: {output_xml_path}"
+            )
             output_xml = read_file_from_disk(output_xml_path)
 
         return output_xml, log_html, report_html
@@ -246,11 +250,9 @@ class CustomThreadingMixIn:
             self.close_request(request)
         except (socket.error, SSL.SysCallError) as why:
 
-            print(
-                'socket.error finishing request from "%s"; Error: %s'
-                % (client_address, str(why))
+            logger.info(
+                msg=f"socket.error finishing request from {client_address}; Error: {why}"
             )
-
             self.close_request(request)
         except:
             self.handle_error(request, client_address)
@@ -307,8 +309,8 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
                         data, getattr(myself, "_dispatch", None)
                     )
                 except Exception as info:  # This should only happen if the module is buggy
-                    print("ERROR do_POST: ", info)
-                    print("Traceback follows:", traceback.print_exc())
+                    logger.debug(msg=f"ERROR do_POST: {info}")
+                    logger.debug(msg=f"Traceback follows: {traceback.print_exc()}")
 
                     # internal error, report as HTTP server error
                     myself.send_response(500)
@@ -397,7 +399,7 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
 
     def startup(self):
         # run until quit signaled from keyboard
-        print("server starting; hit CTRL-C to quit...")
+        logger.info(msg="server starting; hit CTRL-C to quit...")
         while True:
             try:
                 self.rCondition.acquire()
@@ -410,7 +412,7 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
                     self.requests -= 1
                 self.rCondition.release()
             except KeyboardInterrupt:
-                print("quit signaled, i'm done.")
+                logger.info(msg="Quit signaled, i'm done.")
                 return
 
     def get_request(self):
@@ -494,6 +496,8 @@ def get_command_line_params():
 
 
 if __name__ == "__main__":
+
+    # Get our command line parameters
     (
         robot_log_level,
         robot_debug,
@@ -504,10 +508,12 @@ if __name__ == "__main__":
         robot_keyfile,
         robot_certfile,
     ) = get_command_line_params()
+
+    # Server init
     server = MyXMLRPCServer(ip=robot_host, port=robot_port, logRequests=True)
     # Run the server's main loop
     sa = server.socket.getsockname()
-    print("Serving HTTPS on", sa[0], "port", sa[1])
+    logger.info(msg=f"Serving HTTPS on {sa[0]}:{sa[1]}")
 
+    # Server startup
     server.startup()
-1

@@ -412,23 +412,6 @@ def get_command_line_params():
     robot_log_file = args.robot_log_file
     robot_report_file = args.robot_report_file
 
-    # If the user has specified multiple values for the same parameter,
-    # we have received a list. However, the native remoterunner code expects
-    # a colon-separated string so let's transpose that info if necessary
-    # Certainly not pretty code but it works
-    if isinstance(robot_test, list):
-        robot_test = ":".join(robot_test)
-    if isinstance(robot_suite, list):
-        robot_suite = ":".join(robot_suite)
-    if isinstance(robot_include, list):
-        robot_include = ":".join(robot_include)
-    if isinstance(robot_exclude, list):
-        robot_exclude = ":".join(robot_exclude)
-    if isinstance(robot_input_dir, list):
-        robot_input_dir = ":".join(robot_input_dir)
-    if isinstance(robot_extension, list):
-        robot_extension = ":".join(robot_extension)
-
     return (
         robot_log_level,
         robot_suite,
@@ -506,9 +489,38 @@ if __name__ == "__main__":
             raise
         sys.exit(0)
 
+    # prepare the expected data types for the original robotframework-remoterunner core
+    # convert input directory to list item if just one item was present
+    if isinstance(robot_input_dir,str):
+        robot_input_dir = [robot_input_dir]
+
+    # Convert 'include' list items to colon-separated string, if necessary
+    if robot_include and isinstance(robot_include,list):
+        robot_include = ":".join(robot_include)
+
+    # Convert 'exclude' list items to colon-separated string, if necessary
+    if robot_exclude and isinstance(robot_exclude,list):
+        robot_exclude = ":".join(robot_exclude)
+
+    # Convert suites to List item if just one entry was present
+    if isinstance(robot_suite,str):
+        robot_suite = [robot_suite]
+
+    # Convert 'test' list items to colon-separated string, if necessary
+    if robot_test and isinstance(robot_test,list):
+        robot_test = ":".join(robot_test)
+
+    # Convert 'exclude' list items to colon-separated string, if necessary
+    if robot_extension and isinstance(robot_extension,list):
+        robot_extension = ":".join(robot_extension)
+
     # Create the robot args parameter directory and add the
     # parameters whereas  present
-    robot_args = {"loglevel": robot_log_level}
+    robot_args = {}
+
+    # Add the parameters whereas present
+    if robot_log_level:
+        robot_args["loglevel"] = robot_log_level
     if robot_include:
         robot_args["include"] = robot_include
     if robot_exclude:

@@ -52,12 +52,18 @@ class RemoteFrameworkClient:
         """
         Constructor for RemoteFrameworkClient
 
-        :param address: Hostname/IP of the server with optional :Port
-        :type address: str
-        :param debug: Run in debug mode. Enables extra logging and instructs the remote server not to cleanup the
-        workspace after test execution
-        :type debug: bool
+        Parameters
+        ==========
+        remote_connect_string : 'str'
+            connect string, containing host, port, user and pass
+        debug: 'bool'
+            run in debug mode. Enables extra logging and instructs the remote server not to cleanup the
+            workspace after test execution
+
+         Returns
+         =======
         """
+
         self._debug = debug
         self._remote_connect_string = remote_connect_string
         self._dependencies = {}
@@ -75,17 +81,21 @@ class RemoteFrameworkClient:
         Sources a series of test suites and then makes the RPC call to the
         agent to execute the robot run.
 
-        :param suite_list: List of paths to test suites or directories containing test suites
-        :type suite_list: list
-        :param extensions: String that filters the accepted file extensions for the test suites
-        :type extensions: str
-        :param include_suites: List of strings that filter suites to include
-        :type include_suites: list
-        :param robot_arg_dict: Dictionary of arguments that will be passed to robot.run on the remote host
-        :type robot_arg_dict: dict
+        Parameters
+        ==========
+        suite_list : 'list'
+             List of paths to test suites or directories containing test suites
+        extensions: 'str'
+             String that filters the accepted file extensions for the test suites
+        include_suites: 'dict'
+            List of strings that filter suites to include
+        robot_arg_dict: 'dict'
+            Dictionary of arguments that will be passed to robot.run on the remote host
 
-        :return: Dictionary containing stdout/err, log html, output xml, report html, return code
-        :rtype: dict
+         Returns
+         =======
+        ResponseDict: 'dict'
+            Dictionary containing stdout/err, log html, output xml, report html, return code
         """
         # Use robot to resolve all of the test suites
         suite_list = [os.path.normpath(p) for p in suite_list]
@@ -123,17 +133,21 @@ class RemoteFrameworkClient:
 
     @staticmethod
     def _create_test_suite_builder(include_suites, extensions):
+
         """
         Construct a robot.api.TestSuiteBuilder instance. There are argument name/type changes made at
         robotframework==3.2. This function attempts to initialize a TestSuiteBuilder instance assuming
         robotframework>=3.2, and falls back the the legacy arguments on exception.
 
-        :param include_suites: Suites to include
-        :type include_suites: list
-        :param extensions: string of extensions using a ':' as a join character
+        Parameters
+        ==========
+        include_suites : 'list'
+                Suites to include
+                string of extensions using a ':' as a join character
+        Returns
+        =======
+        TestSuiteBuilder return value: 'robot.api.TestSuiteBuilder'
 
-        :return: TestSuiteBuilder instance
-        :rtype: robot.api.TestSuiteBuilder
         """
         if extensions:
             split_ext = list(ext.lower().lstrip(".") for ext in extensions.split(":"))
@@ -154,9 +168,14 @@ class RemoteFrameworkClient:
         Parses through a Test Suite and its child Suites and packages them up into a dictionary so they can be
         serialized
 
-        :param suite: robot test suite
-        :type suite: TestSuite
+        Parameters
+        ==========
+        suite : 'robot.running.model.TestSuite'
+                a TestSuite containing test cases
+        Returns
+        =======
         """
+
         # Empty suites in the hierarchy are likely directories so we're only interested in ones that contain tests
         if suite.tests:
             # Use the actual filename here rather than suite.name so that we preserve the file extension
@@ -175,11 +194,14 @@ class RemoteFrameworkClient:
             - Corrects the path references in the suite file to where the dependencies will be placed on the remote side
             - Returns a dict with metadata alongside the updated test suite file data
 
-        :param suite: a TestSuite containing test cases
-        :type suite: robot.running.model.TestSuite
-
-        :return: Dictionary containing the suite file data and path from the root directory
-        :rtype: dict
+        Parameters
+        ==========
+        suite : 'robot.running.model.TestSuite'
+                a TestSuite containing test cases
+        Returns
+        =======
+        file data / path : 'dict'
+                Dictionary containing the suite file data and path from the root directory
         """
         logger.debug("Processing Test Suite: %s", suite.name)
         # Traverse the suite's ancestry to work out the directory path so that it can be recreated on the remote side
@@ -198,11 +220,14 @@ class RemoteFrameworkClient:
             - Corrects the path references in the suite file to where the dependencies will be placed on the remote side
             - Returns the updated robot file data
 
-        :param source: a Robot file or a path to a robot file
-        :type source: robot.running.model.TestSuite | str
-
-        :return: Dictionary containing the suite file data and path from the root directory
-        :rtype: dict
+        Parameters
+        ==========
+        source : 'str'
+                a Robot file or a path to a robot file
+        Returns
+        =======
+        new_data_file : 'dict'
+                Dictionary containing the suite file data and path from the root directory
         """
         file_path = source.source
         is_test_suite = True
@@ -258,6 +283,18 @@ class RemoteFrameworkClient:
 
 
 def check_if_input_dir_exists(dir: str):
+    """
+    Helper method for parsing the command line params
+    Parameters
+    ==========
+    dir : 'str'
+            input directory
+    Returns
+    =======
+    dir : 'str'
+            input directory
+    """
+
     if not os.path.isdir(dir):
         raise ValueError(f"Value '{dir}' is not a valid input directory")
     else:
@@ -265,6 +302,18 @@ def check_if_input_dir_exists(dir: str):
 
 
 def check_if_output_dir_exists(dir: str):
+    """
+    Helper method for parsing the command line params
+    Parameters
+    ==========
+    dir : 'str'
+            output directory
+    Returns
+    =======
+    dir : 'str'
+            Output directory
+    """
+
     if not os.path.isdir(dir):
         raise ValueError(f"Value '{dir}' is not a valid output directory")
     else:
@@ -272,6 +321,14 @@ def check_if_output_dir_exists(dir: str):
 
 
 def get_command_line_params():
+    """
+    Function which gets the command line params from the user
+    Parameters
+    ==========
+    Returns
+    =======
+    all parameters that the user has specified
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -413,8 +470,11 @@ def get_command_line_params():
         help="Robot Framework report file name. Default name = remote_report.html",
     )
 
+    # run the parser
     args = parser.parse_args()
 
+    # assign values to target variables and return
+    # them back to the user
     robot_log_level = args.robot_log_level
     robot_suite = args.robot_suite
     robot_test = args.robot_test

@@ -109,8 +109,11 @@ class RemoteFrameworkClient:
         # Package them up into a dictionary that can be serialized
         self._package_suite_hierarchy(suite)
 
-        # Make the RPC
-        logger.info(msg=f"Connecting to: {self._remote_connect_string}")
+        # Make the RPC but do not disclose user/pw to the log file
+        debug_connect_string = self._remote_connect_string.split("@")
+        if len(debug_connect_string) > 0:
+            debug_connect_string = debug_connect_string[len(debug_connect_string) - 1]
+        logger.info(msg=f"Connecting to: {debug_connect_string}")
 
         p = ServerProxy(self._remote_connect_string)
         try:
@@ -119,12 +122,12 @@ class RemoteFrameworkClient:
             )
 
         except ProtocolError as err:
-            logger.debug(msg=f"Error URL: {err.url}")
-            logger.debug(msg=f"Error code: {err.errcode}")
-            logger.debug(msg=f"Error message: {err.errmsg}")
+            logger.info(msg=f"Error URL: {err.url}")
+            logger.info(msg=f"Error code: {err.errcode}")
+            logger.info(msg=f"Error message: {err.errmsg}")
             raise
         except ConnectionRefusedError as err:
-            logger.debug(msg="Connection refused!")
+            logger.info(msg=f"{debug_connect_string}: Connection refused!")
             raise
         except:
             raise
@@ -229,8 +232,14 @@ class RemoteFrameworkClient:
         new_data_file : 'dict'
                 Dictionary containing the suite file data and path from the root directory
         """
-        file_path = source.source
-        is_test_suite = True
+
+        # Check if we have to deal with a test file or e.g. a resource file
+        if hasattr(source, "source"):
+            file_path = source.source
+            is_test_suite = True
+        else:
+            file_path = source
+            is_test_suite = False
 
         modified_file_lines = []
         # Read the actual file from disk
@@ -326,6 +335,10 @@ if __name__ == "__main__":
     # client user/pw matched server user/pw
     if robot_test_connection:
         p = ServerProxy(remote_connect_string)
+        debug_connect_string = self._remote_connect_string.split("@")
+        if len(debug_connect_string) > 0:
+            debug_connect_string = debug_connect_string[len(debug_connect_string) - 1]
+        logger.info(msg=f"Connecting to: {debug_connect_string}")
         try:
             logger.info(msg=p.test_connection())
         except ProtocolError as err:
@@ -333,7 +346,7 @@ if __name__ == "__main__":
             logger.info(msg=f"Error code: {err.errcode}")
             logger.info(msg=f"Error message: {err.errmsg}")
         except ConnectionRefusedError as err:
-            logger.info(msg="Connection refused!")
+            logger.info(msg=f"{debug_connect_string}: Connection refused!")
         except:
             raise
         sys.exit(0)
@@ -344,11 +357,11 @@ if __name__ == "__main__":
         robot_input_dir = [robot_input_dir]
 
     # Convert 'include' list items to colon-separated string, if necessary
-    if robot_include and isinstance(robot_include, list):
+    if isinstance(robot_include, list):
         robot_include = ":".join(robot_include)
 
     # Convert 'exclude' list items to colon-separated string, if necessary
-    if robot_exclude and isinstance(robot_exclude, list):
+    if isinstance(robot_exclude, list):
         robot_exclude = ":".join(robot_exclude)
 
     # Convert suites to List item if just one entry was present
@@ -356,11 +369,11 @@ if __name__ == "__main__":
         robot_suite = [robot_suite]
 
     # Convert 'test' list items to colon-separated string, if necessary
-    if robot_test and isinstance(robot_test, list):
+    if isinstance(robot_test, list):
         robot_test = ":".join(robot_test)
 
     # Convert 'exclude' list items to colon-separated string, if necessary
-    if robot_extension and isinstance(robot_extension, list):
+    if isinstance(robot_extension, list):
         robot_extension = ":".join(robot_extension)
 
     # Create the robot args parameter directory and add the
@@ -392,6 +405,8 @@ if __name__ == "__main__":
         robot_arg_dict=robot_args,
     )
 
+    # In case the XMLRPC server did not return any content,
+    # the 'result' value will be 'None'
     if result:
         # Print the robot stdout/stderr
         logger.info(msg="\nRobot execution response:")
@@ -399,6 +414,9 @@ if __name__ == "__main__":
 
         output_dir = robot_output_dir
         if not os.path.exists(output_dir):
+            logger.info(
+                msg=f"Output directory {output_dir} does not exist; creating it for the user"
+            )
             os.makedirs(output_dir)
 
         # Write the log html, report html, output xml

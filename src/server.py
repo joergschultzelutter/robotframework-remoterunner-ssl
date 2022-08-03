@@ -425,7 +425,9 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
 
     def startup(self):
         # run until quit signaled from keyboard
-        logger.info(msg="Server starting; hit CTRL-C to quit...")
+        logger.info(
+            msg="Robot Framework XMLRPC-SSL server startup complete; hit CTRL-C to quit..."
+        )
         while True:
             try:
                 self.rCondition.acquire()
@@ -481,7 +483,9 @@ if __name__ == "__main__":
     server = MyXMLRPCServer(ip=robot_host, port=robot_port, logRequests=True)
     # Run the server's main loop
     sa = server.socket.getsockname()
-    logger.info(msg=f"Serving HTTPS on {sa[0]}:{sa[1]}")
+    logger.info(
+        msg=f"Securely serving remote Robot Framework requests on {sa[0]}:{sa[1]}"
+    )
 
     # Server startup
     server.startup()

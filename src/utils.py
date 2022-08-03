@@ -136,20 +136,52 @@ def get_command_line_params_server():
     """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--host", dest="robot_host", default="localhost", type=str)
-
-    parser.add_argument("--port", dest="robot_port", default=8111, type=int)
-
-    parser.add_argument("--user", dest="robot_user", default="admin", type=str)
-
-    parser.add_argument("--pass", dest="robot_pass", default="admin", type=str)
-
     parser.add_argument(
-        "--keyfile", dest="robot_keyfile", default="privkey.pem", type=str
+        "--host",
+        dest="robot_host",
+        default="localhost",
+        type=str,
+        help="Address to bind to. Default is 'localhost'",
     )
 
     parser.add_argument(
-        "--certfile", dest="robot_certfile", default="cacert.pem", type=str
+        "--port",
+        dest="robot_port",
+        default=8111,
+        type=int,
+        help="Port to listen on. Default is 8111",
+    )
+
+    parser.add_argument(
+        "--user",
+        dest="robot_user",
+        default="admin",
+        type=str,
+        help="User name for BasicAuth authentification. Default value is 'admin'",
+    )
+
+    parser.add_argument(
+        "--pass",
+        dest="robot_pass",
+        default="admin",
+        type=str,
+        help="password for BasicAuth authentification. Default value is 'admin'",
+    )
+
+    parser.add_argument(
+        "--keyfile",
+        dest="robot_keyfile",
+        default="privkey.pem",
+        type=str,
+        help="SSL private key for secure communication. Default value is 'privkey.pem'",
+    )
+
+    parser.add_argument(
+        "--certfile",
+        dest="robot_certfile",
+        default="cacert.pem",
+        type=str,
+        help="SSL certfile for secure communication. Default value is 'cacert.pem'",
     )
 
     parser.add_argument(
@@ -158,14 +190,14 @@ def get_command_line_params_server():
         default="WARN",
         type=str.upper,
         dest="robot_log_level",
-        help="",
+        help="Robot Framework log level. Valid values = TRACE, DEBUG, INFO, WARN, NONE. Default value = WARN",
     )
 
     parser.add_argument(
         "--debug",
         dest="robot_debug",
         action="store_true",
-        help="Enable debug mode",
+        help="Enables debug logging and will not delete the temporary directory after a robot run",
     )
 
     args = parser.parse_args()
@@ -206,25 +238,6 @@ def check_if_input_dir_exists(dir: str):
 
     if not os.path.isdir(dir):
         raise ValueError(f"Value '{dir}' is not a valid input directory")
-    else:
-        return dir
-
-
-def check_if_output_dir_exists(dir: str):
-    """
-    Helper method for parsing the command line params
-    Parameters
-    ==========
-    dir : 'str'
-            output directory
-    Returns
-    =======
-    dir : 'str'
-            Output directory
-    """
-
-    if not os.path.isdir(dir):
-        raise ValueError(f"Value '{dir}' is not a valid output directory")
     else:
         return dir
 
@@ -323,8 +336,7 @@ def get_command_line_params_client():
         nargs="+",
         dest="robot_extension",
         type=str,
-        default="robot:txt:resource",
-        help="Parse only files with this extension when executing a directory. Has no effect when running individual files or when using resource files. You can specify this parameter multiple times, if necessary. Examples: `--extension robot`",
+        help="Parse only files with this extension when executing a directory. Has no effect when running individual files or when using resource files. You can specify this parameter multiple times, if necessary. Specify the value without leading '.'. Example: `--extension robot`. Default extensions: robot, text, txt, resource",
     )
 
     parser.add_argument(
@@ -344,17 +356,18 @@ def get_command_line_params_client():
     parser.add_argument(
         "--output-dir",
         dest="robot_output_dir",
-        type=check_if_output_dir_exists,
+        type=str,
         default=".",
-        help="Output directory which will host your output files. Default: current directory",
+        help="Output directory which will host your output files. If a nonexisting dictionary is specified, it will be created for you.Default: current directory",
     )
 
     parser.add_argument(
         "--input-dir",
         dest="robot_input_dir",
+        action="extend",
+        nargs="+",
         type=check_if_input_dir_exists,
-        default=".",
-        help="Input directory (containing your robot tests). Parameter can be specified multiple times",
+        help="Input directory (containing your robot tests). You can specify this parameter multiple times, if necessary.",
     )
 
     parser.add_argument(
@@ -401,6 +414,13 @@ def get_command_line_params_client():
     robot_output_file = args.robot_output_file
     robot_log_file = args.robot_log_file
     robot_report_file = args.robot_report_file
+
+    # populate defaults in case the user has not specified a value
+    # obviously, argparse's 'extend' option does not permit defaults
+    robot_input_dir = "." if not robot_input_dir else robot_input_dir
+    robot_extension = (
+        ["robot", "txt", "text", "resource"] if not robot_extension else robot_extension
+    )
 
     return (
         robot_log_level,

@@ -29,12 +29,14 @@ from robot.api import TestSuiteBuilder
 from robot.libraries import STDLIBS
 from robot.utils.robotpath import find_file
 import os
+import re
 import logging
 from utils import (
     calculate_ts_parent_path,
     read_file_from_disk,
 )
 import sys
+
 
 # Set up the global logger variable
 logger = logging.getLogger(__name__)
@@ -53,14 +55,19 @@ class RemoteFrameworkClient:
         workspace after test execution
         :type debug: bool
         """
-        self._address = normalize_xmlrpc_address(address, DEFAULT_PORT)
-        self._client = xmlrpc_client.ServerProxy(self._address)
         self._debug = debug
         self._dependencies = {}
         self._suites = {}
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
-    def execute_run(self, suite_list, extensions, include_suites, robot_arg_dict):
+    def execute_run(
+        self,
+        suite_list: list,
+        extensions: str,
+        include_suites: list,
+        robot_arg_dict: dict,
+        remote_connect_string: str,
+    ):
         """
         Sources a series of test suites and then makes the RPC call to the
         agent to execute the robot run.
@@ -90,10 +97,24 @@ class RemoteFrameworkClient:
         self._package_suite_hierarchy(suite)
 
         # Make the RPC
-        logger.info("Connecting to: %s", self._address)
-        response = self._client.execute_robot_run(
-            self._suites, self._dependencies, robot_arg_dict, self._debug
-        )
+        logger.info("Connecting to: %s", remote_connect_string)
+
+        p = ServerProxy(remote_connect_string)
+        try:
+            response = p.execute_robot_run(
+                self._suites, self._dependencies, robot_arg_dict, self._debug
+            )
+
+        except ProtocolError as err:
+            print(f"Error URL: {err.url}")
+            print(f"Error code: {err.errcode}")
+            print(f"Error message: {err.errmsg}")
+            response = None
+        except ConnectionRefusedError as err:
+            print("Connection refused!")
+            response = None
+        except:
+            raise
 
         return response
 
@@ -336,7 +357,7 @@ def get_command_line_params():
         action="extend",
         nargs="+",
         dest="robot_extension",
-        type="str",
+        type=str,
         help="Parse only files with this extension when executing a directory. Has no effect when running individual files or when using resource files. You can specify this parameter multiple times, if necessary. Examples: `--extension robot`",
     )
 
@@ -357,7 +378,7 @@ def get_command_line_params():
     parser.add_argument(
         "--output-dir",
         dest="robot_output_dir",
-        type=check_if_dir_exists,
+        type=check_if_output_dir_exists,
         default=".",
         help="Output directory which will host your output files. Default: current directory",
     )
@@ -365,7 +386,7 @@ def get_command_line_params():
     parser.add_argument(
         "--input-dir",
         dest="robot_input_dir",
-        type=check_if_dir_exists,
+        type=check_if_input_dir_exists,
         default=".",
         help="Input directory (containing your robot tests). Parameter can be specified multiple times",
     )
@@ -491,27 +512,27 @@ if __name__ == "__main__":
 
     # prepare the expected data types for the original robotframework-remoterunner core
     # convert input directory to list item if just one item was present
-    if isinstance(robot_input_dir,str):
+    if isinstance(robot_input_dir, str):
         robot_input_dir = [robot_input_dir]
 
     # Convert 'include' list items to colon-separated string, if necessary
-    if robot_include and isinstance(robot_include,list):
+    if robot_include and isinstance(robot_include, list):
         robot_include = ":".join(robot_include)
 
     # Convert 'exclude' list items to colon-separated string, if necessary
-    if robot_exclude and isinstance(robot_exclude,list):
+    if robot_exclude and isinstance(robot_exclude, list):
         robot_exclude = ":".join(robot_exclude)
 
     # Convert suites to List item if just one entry was present
-    if isinstance(robot_suite,str):
+    if isinstance(robot_suite, str):
         robot_suite = [robot_suite]
 
     # Convert 'test' list items to colon-separated string, if necessary
-    if robot_test and isinstance(robot_test,list):
+    if robot_test and isinstance(robot_test, list):
         robot_test = ":".join(robot_test)
 
     # Convert 'exclude' list items to colon-separated string, if necessary
-    if robot_extension and isinstance(robot_extension,list):
+    if robot_extension and isinstance(robot_extension, list):
         robot_extension = ":".join(robot_extension)
 
     # Create the robot args parameter directory and add the
@@ -539,6 +560,7 @@ if __name__ == "__main__":
         extensions=robot_extension,
         include_suites=robot_suite,
         robot_arg_dict=robot_args,
+        remote_connect_string=remote_connect_string,
     )
     # Print the robot stdout/stderr
     logger.info("\nRobot execution response:")

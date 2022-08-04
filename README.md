@@ -40,33 +40,35 @@ options:
                         pattern similarly as with --test and it can contain parent name separated with a dot. You can specify 
                         this parameter multiple times, if necessary.
   --test ROBOT_TEST [ROBOT_TEST ...]
-                        Select test cases to run by name or long name. Name is case insensitive and it can also be a simple pattern 
-                        where `*` matches anything and `?` matches any char. You can specify this parameter multiple times, if necessary.
+                        Select test cases to run by name or long name. Name is case insensitive and it can also be a simple 
+                        pattern where `*` matches anything and `?` matches any char. You can specify this parameter multiple 
+                        times, if necessary.
   --include ROBOT_INCLUDE [ROBOT_INCLUDE ...]
-                        Select test cases to run by tag. Similarly as name with --test, tag is case and space insensitive and it is possible 
-                        to use patterns with `*` and `?` as wildcards. Tags and patterns can also be combined together with `AND`, `OR`, and `NOT` 
-                        operators. Examples: --include foo, --include bar*, --include fooANDbar*
+                        Select test cases to run by tag. Similarly as name with --test, tag is case and space insensitive and 
+                        it is possible to use patterns with `*` and `?` as wildcards. Tags and patterns can also be combined 
+                        together with `AND`, `OR`, and `NOT` operators. 
+                        Examples: --include foo, --include bar*, --include fooANDbar*
   --exclude ROBOT_EXCLUDE [ROBOT_EXCLUDE ...]
-                        Select test cases not to run by tag. These tests are not run even if included with --include. Tags are matched using the 
-                        rules explained with --include.
+                        Select test cases not to run by tag. These tests are not run even if included with --include. Tags 
+                        are matched using the rules explained with --include.
   --extension ROBOT_EXTENSION [ROBOT_EXTENSION ...]
-                        Parse only files with this extension when executing a directory. Has no effect when running individual files or when using 
-                        resource files. You can specify this parameter multiple times, if necessary. Specify the value without leading '.'. 
-                        Example: `--extension robot`. Default extensions: robot, text, txt, resource
+                        Parse only files with this extension when executing a directory. Has no effect when running individual
+                        files or when using resource files. You can specify this parameter multiple times, if necessary. Specify
+                        the value without leading '.'. Example: `--extension robot`. Default values: robot, text, txt, resource
   --output-dir ROBOT_OUTPUT_DIR
-                        Output directory which will host your output files. If a nonexisting dictionary is specified, it will be created 
-                        for you. Default value: current directory
+                        Output directory which will host your output files. If a nonexisting dictionary is specified, 
+                        it will be created for you. Default value: current directory
   --input-dir ROBOT_INPUT_DIR [ROBOT_INPUT_DIR ...]
-                        Input directory (containing your robot tests). You can specify this parameter multiple times, if necessary. 
-                        Default value: current directory
+                        Input directory (containing your robot tests). You can specify this parameter multiple 
+                        times, if necessary. Default value: current directory
   --output-file ROBOT_OUTPUT_FILE
                         Robot Framework output file name. Default value: remote_output.xml
   --log-file ROBOT_LOG_FILE
                         Robot Framework log file name. Default value: remote_log.html
   --report-file ROBOT_REPORT_FILE
                         Robot Framework report file name. Default value: remote_report.html
-  --debug               Run in debug mode. This will enable debug logging and does not cleanup the workspace directory on the remote machine 
-                        after test execution
+  --debug               Run in debug mode. This will enable debug logging and does not cleanup the workspace directory 
+                        on the remote machine after test execution
 ```
 
 If no parameters are specified, the ```client.py``` script will connect to a server on ```localhost``` port ```8111``` while serving all robot files from the current directory

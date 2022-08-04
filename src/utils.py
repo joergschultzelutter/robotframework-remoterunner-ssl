@@ -360,7 +360,7 @@ def get_command_line_params_client():
         dest="robot_output_dir",
         type=str,
         default=".",
-        help="Output directory which will host your output files. If a nonexisting dictionary is specified, it will be created for you.Default: current directory",
+        help="Output directory which will host your output files. If a nonexisting dictionary is specified, it will be created for you. Default: current directory",
     )
 
     parser.add_argument(
@@ -369,7 +369,7 @@ def get_command_line_params_client():
         action="extend",
         nargs="+",
         type=check_if_input_dir_exists,
-        help="Input directory (containing your robot tests). You can specify this parameter multiple times, if necessary.",
+        help="Input directory (containing your robot tests). You can specify this parameter multiple times, if necessary. Default: current directory",
     )
 
     parser.add_argument(

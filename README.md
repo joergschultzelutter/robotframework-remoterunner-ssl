@@ -6,8 +6,8 @@ This is a Python3 port of [chrisBrookes93](https://github.com/chrisBrookes93)'s 
 
 The ```src``` directory from this repo contains two scripts:
 
-```server.py``` - The server that receives and executes the robot run.
-```client.py``` - The client that invokes the server to execute the robot run on a remote machine.
+- ```server.py``` - The server that receives and executes the robot run
+- ```client.py``` - The client that invokes the server to execute the robot run on a remote machine
 
 ### client.py
 
@@ -45,9 +45,9 @@ optional arguments:
   --test-connection     Use this test option to check if both client and server are properly configured. Returns a simple 'ok' string if the client was able to establish a connection to
                         the server and user/pass were ok
   --output-dir ROBOT_OUTPUT_DIR
-                        Output directory which will host your output files. If a nonexisting dictionary is specified, it will be created for you.Default: current directory
+                        Output directory which will host your output files. If a nonexisting dictionary is specified, it will be created for you. Default: current directory
   --input-dir ROBOT_INPUT_DIR [ROBOT_INPUT_DIR ...]
-                        Input directory (containing your robot tests). You can specify this parameter multiple times, if necessary.
+                        Input directory (containing your robot tests). You can specify this parameter multiple times, if necessary. Default: current directory
   --output-file ROBOT_OUTPUT_FILE
                         Robot Framework output file name. Default name = remote_output.xml
   --log-file ROBOT_LOG_FILE
@@ -56,7 +56,7 @@ optional arguments:
                         Robot Framework report file name. Default name = remote_report.html
 ```
 
-If no parameters are specified, the ```client.py``` script will try to connect to a server on 127.0.0.1 port 8111 while serving all robot files from the current directory
+If no parameters are specified, the ```client.py``` script will connect to a server on ```localhost``` port ```8111``` while serving all robot files from the current directory
 
 ### server.py
 

@@ -366,7 +366,7 @@ if __name__ == "__main__":
     # client user/pw matched server user/pw
     if robot_test_connection:
         p = ServerProxy(remote_connect_string)
-        debug_connect_string = self._remote_connect_string.split("@")
+        debug_connect_string = remote_connect_string.split("@")
         if len(debug_connect_string) > 0:
             debug_connect_string = debug_connect_string[len(debug_connect_string) - 1]
         logger.info(msg=f"Connecting to: {debug_connect_string}")

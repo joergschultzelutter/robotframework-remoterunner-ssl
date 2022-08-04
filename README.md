@@ -179,7 +179,7 @@ Library         AppriseLibrary               ##### Hello @pip:robotframework-apr
     - Each entry in this directory will be checked against the PyPi packages that are installed on the server's Python environment.
     - If the package is detected as 'installed', the ```Server``` process will not reinstall the package. 
     - A version check between installed package version on the ```Server``` and expected package version from the ```Client's``` test suite will __NOT__ be performed
-    - If you depend on always using the correct PyPi package version (regardless of whether the PyPi package is installed on the server or not), then activate the ```Server's``` ```--always-upgrade-packages``` option. :bangbang:__Note that this option might cause unintended side effects in case you run more than one test in parallel and re-install PyPi dependencies which are in use by one of your running tasks.__:bangbang: 
+    - If you depend on always using the correct PyPi package version (regardless of whether the PyPi package is installed on the server or not), then activate the ```Server's``` ```--always-upgrade-packages``` option. __Note that this option might cause unintended side effects in case you run more than one test in parallel and re-install PyPi dependencies which are in use by one of your running tasks.__ 
     - If PyPi packages were detected to be installed, the ```Server``` temporarily unsets both ```SSL_CERT_FILE``` and ```REQUESTS_CA_BUNDLE``` environment variables as otherwise, the installation process would fail.
     - The ```Server``` now installs the requested PyPi packages and restores both ```SSL_CERT_FILE``` and ```REQUESTS_CA_BUNDLE``` environment variables' values
 - Finally, the Robot Framework Suite(s) are executed as usual

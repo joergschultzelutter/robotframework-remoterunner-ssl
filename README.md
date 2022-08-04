@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![CodeQL](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/actions/workflows/codeql.yml/badge.svg)](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/actions/workflows/codeql.yml)
 
-This is a Python3 port of [chrisBrookes93](https://github.com/chrisBrookes93)'s [robotframework-remoterunner](https://github.com/chrisBrookes93/robotframework-remoterunner) to  [Etopian](https://github.com/etopian/)'s [https XMLRPC server](https://github.com/etopian/python3-xmlrpc-ssl-basic-auth), providing a remote multithreaded XMLRPC SSL server with BasicAuth support and automated remote server PyPi package installation to Robot Framework users.
+This is a Python3 port of [chrisBrookes93](https://github.com/chrisBrookes93)'s [robotframework-remoterunner](https://github.com/chrisBrookes93/robotframework-remoterunner) to  [Etopian](https://github.com/etopian/)'s [https XMLRPC server](https://github.com/etopian/python3-xmlrpc-ssl-basic-auth), providing a multithreaded XMLRPC SSL server with BasicAuth support and automated remote server PyPi package installation to Robot Framework users.
 
 ## Repository contents
 
@@ -114,6 +114,17 @@ Supports all features that are supported by Chris' [robotframework-remoterunner]
 
 - Support for Python version 2
 
+## Connection Test
+
+For a simple connection test between ```Client``` and ```Server```, install programs, environment variables and certificates (see following chapters). Run the server. Then run the client with the ```--test-connection``` option:
+
+```bash
+(venv) [20:52:52 - jsl@gowron - ~/git/robotframework-remoterunner-ssl/src]$ python client.py --test-connection
+2022-08-04 20:53:06,690 client -INFO- Connecting to: localhost:8111
+2022-08-04 20:53:06,762 client -INFO- OK
+```
+If a SSL connection could be established and there was no mismatch in user/passwords, you should receive a plain 'OK' string.
+
 ## Library and Resource references for external files
 
 Chris's original code already supported external references for:
@@ -197,12 +208,43 @@ Library         AppriseLibrary               ##### Hello @pip:robotframework-apr
 
 - Run the [genpubkey.sh](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/blob/master/src/genpubkey.sh) script.
 - For testing on localhost, you can keep all defaults as is. Exception: set the ```FQDN``` setting to value ```localhost``` for both certificates
-
-### Testing on localhost
-
-Remember to set the following environment variables for __both__ ```Server``` _and_ ```Client``` sessions:
+- In case you use self-signed certificates for testing on ```localhost```, remember that you may be required set the following environment variables for __both__ ```Server``` _and_ ```Client``` sessions:
 
 ```bash
     export SSL_CERT_FILE=/path/to/your/cacert.pem
     export REQUESTS_CA_BUNDLE=/path/to/your/cacert.pem
+```
+
+In order to allow OpenSSL to trust your recently hatched self-signed certificate, you may need to apply a few more OS-specific steps. Details: see post on [StackOverflow](https://stackoverflow.com/questions/17437100/how-to-avoid-the-tlsv1-alert-unknown-ca-error-in-libmproxy)
+
+#### Windows
+
+See [https://docs.microsoft.com/en-US/troubleshoot/windows-server/identity/export-root-certification-authority-certificate](https://docs.microsoft.com/en-US/troubleshoot/windows-server/identity/export-root-certification-authority-certificate)
+
+#### Linux
+
+##### Installation
+
+```bash
+sudo mkdir /etc/share/certificates/extra && cp cacert.crt /user/share/certficates/extra/cacert.crt
+sudo dpkg-reconfigure ca-certificates
+```
+
+##### Uninstall
+
+```bash
+sudo rm -r /etc/share/certificates/extra
+sudo dpkg-reconfigure ca-certificates
+```
+
+### MacOS
+
+##### Installation
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cacert.pem
+```
+
+##### Uninstall
+```bash
+sudo security remove-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cacert.pem
 ```

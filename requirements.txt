@@ -1,2 +1,3 @@
 robotframework>=4.0
 pyopenssl>=22.0.0
+certifi

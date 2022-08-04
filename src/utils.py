@@ -1,6 +1,6 @@
 #!/opt/local/bin/python3
 #
-# robotframework-remoterunner-mt: utility functions
+# robotframework-remoterunner-ssl: utility functions
 # Author: Joerg Schultze-Lutter, 2021
 #
 # Parts of this software are based on the following open source projects:

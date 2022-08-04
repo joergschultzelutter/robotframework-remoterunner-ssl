@@ -1,6 +1,6 @@
 #!/opt/local/bin/python3
 #
-# robotframework-remoterunner-mt: server
+# robotframework-remoterunner-ssl: server
 # Author: Joerg Schultze-Lutter, 2021
 #
 # Parts of this software are based on the following open source projects:

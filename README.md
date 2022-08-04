@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![CodeQL](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/actions/workflows/codeql.yml/badge.svg)](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/actions/workflows/codeql.yml)
 
-This is a Python3 port of [chrisBrookes93](https://github.com/chrisBrookes93)'s [robotframework-remoterunner](https://github.com/chrisBrookes93/robotframework-remoterunner) to  [Etopian](https://github.com/etopian/)'s [https XMLRPC server](https://github.com/etopian/python3-xmlrpc-ssl-basic-auth), providing a remote multithreaded XMLRPC SSL server with BasicAuth support to Robot Framework users.
+This is a Python3 port of [chrisBrookes93](https://github.com/chrisBrookes93)'s [robotframework-remoterunner](https://github.com/chrisBrookes93/robotframework-remoterunner) to  [Etopian](https://github.com/etopian/)'s [https XMLRPC server](https://github.com/etopian/python3-xmlrpc-ssl-basic-auth), providing a remote multithreaded XMLRPC SSL server with BasicAuth support and automated remote server PyPi package installation to Robot Framework users.
 
 ## Repository contents
 

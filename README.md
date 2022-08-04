@@ -135,7 +135,11 @@ Robot Framework standard libraries are detected and will obviously not be read f
 
 If your Robot Framework suite depends on PyPi package libraries which are currently _not_ installed on the remote XMLRPC server, the previous lookup process would fail.
 
-In order to support this use case, the server/client process use decorator-like references which will be interpreted by both server and client processes. See the previous example which got extended for external package support:
+```robotframework
+Library         Uninstalled_PyPi_Library
+```
+
+In order to support this use case, both ```Server```/```Client``` processes use a decorator-like reference. Let's extend the previous example with that decorator:
 
 ```robotframework
 *** Settings ***
@@ -145,27 +149,27 @@ Library         python_file.py
 Library         AppriseLibrary # @pip:robotframework-apprise	
 ```
 
-In order to enable PyPi package installation process via pip, you need to do the following:
+To summarize: in order to enable PyPi package installation process via pip, you need to do the following:
 
-1. Specify your library as usual
+1. Specify your ```Library``` reference as usual
 
 ```robotframework
 Library         AppriseLibrary	
 ```
-2. Add a trailing comment to that line and specify the package name as listed on PyPi
+2. Add a trailing comment with a decorator to that line. Specify the name of the package as listed on PyPi.
 
 ```robotframework
 Library         AppriseLibrary 	# @pip:robotframework-apprise	
 ```
 Syntax: ```@pip:<PyPi-Package-Name>[pypi version]``` 
 
-If your test depends on a specific version, that data can be specified by following the standard ```pip``` syntax:
+Standard pip versioning is supported; just extend the decorator setting:
 
 ```robotframework
 Library         AppriseLibrary # @pip:robotframework-apprise==0.1.0	
 ```
 
-You can use leading / trailing comments, spaces etc as part of this qualifier:
+Leading / trailing comments etc are ignored by the decorator parser, meaning that a decorator setting like the following would still be successful:
 
 ```robotframework
 Library         AppriseLibrary               ##### Hello @pip:robotframework-aprslib==0.1.0 World	

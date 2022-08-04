@@ -6,7 +6,7 @@ This is a Python3 port of [chrisBrookes93](https://github.com/chrisBrookes93)'s 
 
 ## Repository contents
 
-The ```src``` directory from this repo contains two scripts:
+The ```src``` directory from this repo contains two core scripts:
 
 - ```server.py``` - The server that receives and executes the robot run
 - ```client.py``` - The client that invokes the server to execute the robot run on a remote machine

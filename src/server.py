@@ -157,7 +157,7 @@ class RobotFrameworkServer:
 
                 # get the installed pips
                 installed_pips = {pkg.key for pkg in pkg_resources.working_set}
-                pips_to_be_installed = set()
+                pips_to_be_installed = []
 
                 for pip_dependency in pip_dependencies.values():
                     mymatch = re.search(pattern="(\S+)\s*<|>|=", string=pip_dependency)
@@ -167,19 +167,91 @@ class RobotFrameworkServer:
                         pip_package = pip_dependency
 
                     # Check if the package (excluding the version info!) is already installed
-                    if pip_package not in installed_pips:
-                        pips_to_be_installed.add(pip_dependency)
+                    # If not, collect the entries with potential version info
+                    # (but don't install the pip packages yet)
+                    if (pip_package not in installed_pips) or (
+                        robot_always_upgrade_packages
+                    ):
+                        if pip_dependency not in pips_to_be_installed:
+                            pips_to_be_installed.append(pip_dependency)
                     else:
                         logger.debug(
                             msg=f"Skipping installation of pip package '{pip_dependency}'; already installed"
                         )
+
                 if len(pips_to_be_installed) > 0:
-                    # Install all nonpresent pips
-                    # request which may contain a specific version information that we need to honor
-                    logger.info(msg=f"Installing pip packages '{pips_to_be_installed}'")
-                    subprocess.check_call(
-                        [sys.executable, "-m", "pip", "install", pips_to_be_installed]
+                    logger.info(f"Pip package installation: startup...")
+
+                    # Get the current value for our SSL environment variables (if configured)
+                    #
+                    # These variables might be set in case the user tests on localhost
+                    #
+                    # Prior to using pip, we need to unset these variables - otherwise,
+                    # pip will be unable to install the packages.
+                    #
+                    # Once the installation process has completed, we restore the original value(s)
+                    # whereas present.
+                    _SSL_CERT_FILE = os.getenv("SSL_CERT_FILE")
+                    _REQUESTS_CA_BUNDLE = os.getenv("REQUESTS_CA_BUNDLE")
+
+                    if _SSL_CERT_FILE:
+                        logger.debug(
+                            msg="Unsetting environment variable 'SSL_CERT_FILE'"
+                        )
+                        os.unsetenv("SSL_CERT_FILE")
+                    if _REQUESTS_CA_BUNDLE:
+                        logger.debug(
+                            msg="Unsetting environment variable 'REQUESTS_CA_BUNDLE'"
+                        )
+                        os.unsetenv("REQUESTS_CA_BUNDLE")
+
+                    # Install all nonpresent pips. Note that this time, we honor
+                    # potential versioning information that the user has specified
+                    #
+                    logger.info(
+                        f"Pip package installation: installing: {','.join(pips_to_be_installed)}"
                     )
+
+                    # prepare the installer string and start the installation
+                    installer_exec = [sys.executable, "-m", "pip", "install"]
+                    # activate upgrade mode in case the user has requested it
+                    if robot_always_upgrade_packages:
+                        installer_exec.append("--upgrade")
+                    # These are the packages that we want/need to install
+                    installer_exec.append(" ".join(pips_to_be_installed))
+
+                    try:
+                        subprocess.check_call(installer_exec)
+                    except ex as Exception:
+                        logger.info(
+                            msg="Exception occurred while installing pip packages"
+                        )
+                        # restore the environment variables prior to raising the exception
+                        if _SSL_CERT_FILE:
+                            logger.debug(
+                                msg="Restoring environment variable 'SSL_CERT_FILE'"
+                            )
+                            os.environ["SSL_CERT_FILE"] = _SSL_CERT_FILE
+                        if _REQUESTS_CA_BUNDLE:
+                            logger.debug(
+                                msg="Restoring environment variable 'REQUESTS_CA_BUNDLE'"
+                            )
+                            os.environ["REQUESTS_CA_BUNDLE"] = _REQUESTS_CA_BUNDLE
+                        raise
+
+                    logger.info(f"Pip package installation: complete")
+
+                    # now restore our environment parameters whereas necessary
+                    if _SSL_CERT_FILE:
+                        logger.debug(
+                            msg="Restoring environment variable 'SSL_CERT_FILE'"
+                        )
+                        os.environ["SSL_CERT_FILE"] = _SSL_CERT_FILE
+                    if _REQUESTS_CA_BUNDLE:
+                        logger.debug(
+                            msg="Restoring environment variable 'REQUESTS_CA_BUNDLE'"
+                        )
+                        os.environ["REQUESTS_CA_BUNDLE"] = _REQUESTS_CA_BUNDLE
 
                 logger.info(
                     msg="Successfully finished pip packages installation process!"
@@ -523,6 +595,7 @@ if __name__ == "__main__":
         robot_pass,
         robot_keyfile,
         robot_certfile,
+        robot_always_upgrade_packages,
     ) = get_command_line_params_server()
 
     # Server init

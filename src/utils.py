@@ -196,6 +196,14 @@ def get_command_line_params_server():
     )
 
     parser.add_argument(
+        "--always-upgrade-packages",
+        dest="robot_always_upgrade_packages",
+        action="store_true",
+        help="If your Robot Framework suite depends on external pip packages, always upgrade these packages"
+        " even if they are already installed",
+    )
+
+    parser.add_argument(
         "--debug",
         dest="robot_debug",
         action="store_true",
@@ -212,6 +220,7 @@ def get_command_line_params_server():
     robot_pass = args.robot_pass
     robot_keyfile = args.robot_keyfile
     robot_certfile = args.robot_certfile
+    robot_always_upgrade_packages = args.robot_always_upgrade_packages
 
     return (
         robot_log_level,
@@ -222,6 +231,7 @@ def get_command_line_params_server():
         robot_pass,
         robot_keyfile,
         robot_certfile,
+        robot_always_upgrade_packages,
     )
 
 
@@ -254,6 +264,15 @@ def get_command_line_params_client():
     all parameters that the user has specified
     """
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--test-connection",
+        dest="robot_test_connection",
+        action="store_true",
+        help="Enable this option to check if both client and server are properly configured. Returns a simple 'ok' "
+        "string to the client if it was able to establish a secure connection to the remote XMLRPC server and "
+        "supplied user/pass credentials were ok",
+    )
 
     parser.add_argument(
         "--host",
@@ -293,7 +312,9 @@ def get_command_line_params_client():
         default="WARN",
         type=str.upper,
         dest="robot_log_level",
-        help="Threshold level for logging. Available levels: TRACE, DEBUG, INFO (default), WARN, NONE (no logging). Use syntax `LOGLEVEL:DEFAULT` to define the default visible log level in log files. Examples: --loglevel DEBUG --loglevel DEBUG:INFO",
+        help="Threshold level for logging. Available levels: TRACE, DEBUG, INFO (default), WARN, NONE (no logging). "
+        "Use syntax `LOGLEVEL:DEFAULT` to define the default visible log level in log files. Examples: "
+        "--loglevel DEBUG --loglevel DEBUG:INFO",
     )
 
     parser.add_argument(
@@ -302,7 +323,10 @@ def get_command_line_params_client():
         nargs="+",
         dest="robot_suite",
         type=str,
-        help="Select test suites to run by name. When this option is used with --test, --include or --exclude, only test cases in matching suites and also matching other filtering criteria are selected. Name can be a simple pattern similarly as with --test and it can contain parent name separated with a dot. You can specify this parameter multiple times, if necessary.",
+        help="Select test suites to run by name. When this option is used with --test, --include or --exclude, "
+        "only test cases in matching suites and also matching other filtering criteria are selected. Name can be "
+        "a simple pattern similarly as with --test and it can contain parent name separated with a dot. You can "
+        "specify this parameter multiple times, if necessary.",
     )
 
     parser.add_argument(
@@ -311,7 +335,9 @@ def get_command_line_params_client():
         nargs="+",
         dest="robot_test",
         type=str,
-        help="Select test cases to run by name or long name. Name is case insensitive and it can also be a simple pattern where `*` matches anything and `?` matches any char. You can specify this parameter multiple times, if necessary.",
+        help="Select test cases to run by name or long name. Name is case insensitive and it can also be a simple "
+        "pattern where `*` matches anything and `?` matches any char. You can specify this parameter multiple "
+        "times, if necessary.",
     )
 
     parser.add_argument(
@@ -320,7 +346,10 @@ def get_command_line_params_client():
         nargs="+",
         dest="robot_include",
         type=str,
-        help="Select test cases to run by tag. Similarly as name with --test, tag is case and space insensitive and it is possible to use patterns with `*` and `?` as wildcards. Tags and patterns can also be combined together with `AND`, `OR`, and `NOT` operators. Examples: --include foo, --include bar*, --include fooANDbar*",
+        help="Select test cases to run by tag. Similarly as name with --test, tag is case and space insensitive and "
+        "it is possible to use patterns with `*` and `?` as wildcards. Tags and patterns can also be combined "
+        "together with `AND`, `OR`, and `NOT` operators. Examples: --include foo, --include bar*, "
+        "--include fooANDbar*",
     )
 
     parser.add_argument(
@@ -329,7 +358,8 @@ def get_command_line_params_client():
         nargs="+",
         dest="robot_exclude",
         type=str,
-        help="Select test cases not to run by tag. These tests are not run even if included with --include. Tags are matched using the rules explained with --include.",
+        help="Select test cases not to run by tag. These tests are not run even if included with --include. Tags are "
+        "matched using the rules explained with --include.",
     )
 
     parser.add_argument(
@@ -338,21 +368,10 @@ def get_command_line_params_client():
         nargs="+",
         dest="robot_extension",
         type=str,
-        help="Parse only files with this extension when executing a directory. Has no effect when running individual files or when using resource files. You can specify this parameter multiple times, if necessary. Specify the value without leading '.'. Example: `--extension robot`. Default extensions: robot, text, txt, resource",
-    )
-
-    parser.add_argument(
-        "--debug",
-        dest="robot_debug",
-        action="store_true",
-        help="Run in debug mode. This will enable debug logging and does not cleanup the workspace directory on the remote machine after test execution",
-    )
-
-    parser.add_argument(
-        "--test-connection",
-        dest="robot_test_connection",
-        action="store_true",
-        help="Use this test option to check if both client and server are properly configured. Returns a simple 'ok' string if the client was able to establish a connection to the server and user/pass were ok",
+        help="Parse only files with this extension when executing a directory. Has no effect when running individual "
+        "files or when using resource files. You can specify this parameter multiple times, if necessary. "
+        "Specify the value without leading '.'. Example: `--extension robot`. Default extensions: robot, text, "
+        "txt, resource",
     )
 
     parser.add_argument(
@@ -360,7 +379,8 @@ def get_command_line_params_client():
         dest="robot_output_dir",
         type=str,
         default=".",
-        help="Output directory which will host your output files. If a nonexisting dictionary is specified, it will be created for you. Default: current directory",
+        help="Output directory which will host your output files. If a nonexisting dictionary is specified, "
+        "it will be created for you. Default value: current directory",
     )
 
     parser.add_argument(
@@ -369,7 +389,8 @@ def get_command_line_params_client():
         action="extend",
         nargs="+",
         type=check_if_input_dir_exists,
-        help="Input directory (containing your robot tests). You can specify this parameter multiple times, if necessary. Default: current directory",
+        help="Input directory (containing your robot tests). You can specify this parameter multiple times, "
+        "if necessary. Default value: current directory",
     )
 
     parser.add_argument(
@@ -377,23 +398,31 @@ def get_command_line_params_client():
         dest="robot_output_file",
         type=str,
         default="remote_output.xml",
-        help="Robot Framework output file name. Default name = remote_output.xml",
+        help="Robot Framework output file name. Default value: remote_output.xml",
     )
+
     parser.add_argument(
         "--log-file",
         dest="robot_log_file",
         type=str,
         default="remote_log.html",
-        help="Robot Framework log file name. Default name = remote_log.html",
+        help="Robot Framework log file name. Default value: remote_log.html",
     )
     parser.add_argument(
         "--report-file",
         dest="robot_report_file",
         type=str,
         default="remote_report.html",
-        help="Robot Framework report file name. Default name = remote_report.html",
+        help="Robot Framework report file name. Default value: remote_report.html",
     )
 
+    parser.add_argument(
+        "--debug",
+        dest="robot_debug",
+        action="store_true",
+        help="Run in debug mode. This will enable debug logging and does not cleanup the workspace directory on the "
+        "remote machine after test execution",
+    )
     # run the parser
     args = parser.parse_args()
 

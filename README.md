@@ -155,20 +155,20 @@ Library         AppriseLibrary
 2. Add a trailing comment to that line and specify the package name as listed on PyPi
 
 ```robotframework
-Library         AppriseLibrary 	# @pip:robotframework-aprslib	
+Library         AppriseLibrary 	# @pip:robotframework-apprise	
 ```
 Syntax: ```@pip:<PyPi-Package-Name>[pypi version]``` 
 
 If your test depends on a specific version, that data can be specified by following the standard ```pip``` syntax:
 
 ```robotframework
-Library         AppriseLibrary # @pip:robotframework-aprslib==0.1.0	
+Library         AppriseLibrary # @pip:robotframework-apprise==0.1.0	
 ```
 
-You can use leading / trailing comments as part of this qualifier:
+You can use leading / trailing comments, spaces etc as part of this qualifier:
 
 ```robotframework
-Library         AppriseLibrary ##### Hello @pip:robotframework-aprslib==0.1.0 World	
+Library         AppriseLibrary               ##### Hello @pip:robotframework-aprslib==0.1.0 World	
 ```
 
 ### Tell me more about what happens under the hood

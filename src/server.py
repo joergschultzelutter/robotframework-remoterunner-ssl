@@ -25,6 +25,7 @@
 #
 
 import logging
+import re
 import tempfile
 import os
 import sys
@@ -54,7 +55,9 @@ from utils import (
     get_command_line_params_server,
 )
 import shutil
-
+import subprocess
+import importlib.util
+import pkg_resources
 
 # Set up the global logger variable
 logging.basicConfig(
@@ -102,7 +105,13 @@ class RobotFrameworkServer:
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     @staticmethod
-    def execute_robot_run(test_suites, dependencies, robot_args, debug=False):
+    def execute_robot_run(
+        test_suites: dict,
+        dependencies: dict,
+        pip_dependencies: dict,
+        robot_args: dict,
+        debug=False,
+    ):
         """
         Callback that is invoked when a request to execute a robot run is made
 
@@ -112,6 +121,8 @@ class RobotFrameworkServer:
             Dictionary of suites to execute
         dependencies: 'dict'
             Dictionary of files the test suites are dependent on
+        pip_dependencies: 'list'
+            List of pip packages that the user explicitly asked us to install
         robot_args: 'dict'
             Dictionary of arguments to pass to robot.run()
         debug: 'bool'
@@ -138,6 +149,41 @@ class RobotFrameworkServer:
             old_cwd = os.getcwd()
             os.chdir(workspace_dir)
             sys.path.append(workspace_dir)
+
+            # Install external pip packages in case the
+            # user asked us to do so
+            if len(pip_dependencies) > 0:
+                logger.info(msg="Starting pip packages installation process ...")
+
+                # get the installed pips
+                installed_pips = {pkg.key for pkg in pkg_resources.working_set}
+                pips_to_be_installed = set()
+
+                for pip_dependency in pip_dependencies.values():
+                    mymatch = re.search(pattern="(\S+)\s*<|>|=", string=pip_dependency)
+                    if mymatch:
+                        pip_package = mymatch[1]
+                    else:
+                        pip_package = pip_dependency
+
+                    # Check if the package (excluding the version info!) is already installed
+                    if pip_package not in installed_pips:
+                        pips_to_be_installed.add(pip_dependency)
+                    else:
+                        logger.debug(
+                            msg=f"Skipping installation of pip package '{pip_dependency}'; already installed"
+                        )
+                if len(pips_to_be_installed) > 0:
+                    # Install all nonpresent pips
+                    # request which may contain a specific version information that we need to honor
+                    logger.info(msg=f"Installing pip packages '{pips_to_be_installed}'")
+                    subprocess.check_call(
+                        [sys.executable, "-m", "pip", "install", pips_to_be_installed]
+                    )
+
+                logger.info(
+                    msg="Successfully finished pip packages installation process!"
+                )
 
             # Execute the robot run
             std_out_err = StringIO()

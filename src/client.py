@@ -67,6 +67,7 @@ class RemoteFrameworkClient:
         self._debug = debug
         self._remote_connect_string = remote_connect_string
         self._dependencies = {}
+        self._pip_dependencies = {}
         self._suites = {}
         logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
@@ -118,7 +119,11 @@ class RemoteFrameworkClient:
         p = ServerProxy(self._remote_connect_string)
         try:
             response = p.execute_robot_run(
-                self._suites, self._dependencies, robot_arg_dict, self._debug
+                self._suites,
+                self._dependencies,
+                self._pip_dependencies,
+                robot_arg_dict,
+                self._debug,
             )
 
         except ProtocolError as err:
@@ -252,6 +257,20 @@ class RemoteFrameworkClient:
                 imp_type = matches.group(1)
                 whitespace_sep = matches.group(2)
                 res_path = matches.group(3)
+                pip_package = None
+
+                # If filename (res_path) contains a comment, then separate
+                # filename and comment
+                if "#" in res_path:
+                    _res_path_temp = res_path.split("#", 1)
+                    res_path = _res_path_temp[0].strip()
+
+                    # Now check the remainder (comment) for a pip decorator
+                    _remainder = _res_path_temp[1].strip()
+                    pipmatch = re.search(pattern="@pip:\s*(\S+)", string=_remainder)
+                    if pipmatch:
+                        pip_package = pipmatch[1]
+
                 # Replace the path with just the filename. They will be in the PYTHONPATH on the remote side so only
                 # the filename is required.
                 filename = os.path.basename(res_path)
@@ -269,14 +288,26 @@ class RemoteFrameworkClient:
                     and not res_path.strip().startswith("robot.libraries")
                     and res_path.strip() not in STDLIBS
                 ):
+                    # do we deal with a local library and not with
+                    # something that we need to install from pypy?
                     # Find the actual file path
-                    full_path = find_file(
-                        res_path, os.path.dirname(file_path), imp_type
-                    )
+                    if not pip_package:
+                        full_path = find_file(
+                            res_path, os.path.dirname(file_path), imp_type
+                        )
 
                     if imp_type == "Library":
-                        # If its a Library (python file) then read the data and add to the dependencies
-                        self._dependencies[filename] = read_file_from_disk(full_path)
+                        # If user indicates that the library requires a pip package install,
+                        # do not try to read the library from disk but rather add the pip package
+                        # name to our pip package dependencies dictionary. Save both pip package name
+                        # and external resource name - we need them both at a later point in time
+                        if pip_package:
+                            self._pip_dependencies[res_path] = pip_package
+                        else:
+                            # If its a Library (python file) then read the data and add to the dependencies
+                            self._dependencies[filename] = read_file_from_disk(
+                                full_path
+                            )
                     else:
                         # If its a Resource, recurse down and parse it
                         self._process_robot_file(full_path)

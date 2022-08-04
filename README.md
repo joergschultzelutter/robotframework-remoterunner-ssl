@@ -15,7 +15,8 @@ The ```src``` directory from this repo contains two scripts:
 
 ```text
 usage: client.py [-h] [--test-connection] [--host ROBOT_HOST] [--port ROBOT_PORT] [--user ROBOT_USER] 
-                      [--pass ROBOT_PASS] [--log-level {WARN,DEBUG,TRACE,NONE,INFO}] [--suite ROBOT_SUITE [ROBOT_SUITE ...]]
+                      [--pass ROBOT_PASS] [--log-level {WARN,DEBUG,TRACE,NONE,INFO}] 
+                      [--suite ROBOT_SUITE [ROBOT_SUITE ...]]
                       [--test ROBOT_TEST [ROBOT_TEST ...]] [--include ROBOT_INCLUDE [ROBOT_INCLUDE ...]] 
                       [--exclude ROBOT_EXCLUDE [ROBOT_EXCLUDE ...]] [--extension ROBOT_EXTENSION [ROBOT_EXTENSION ...]]
                       [--output-dir ROBOT_OUTPUT_DIR] [--input-dir ROBOT_INPUT_DIR [ROBOT_INPUT_DIR ...]] 

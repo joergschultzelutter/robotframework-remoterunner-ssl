@@ -77,8 +77,10 @@ If no parameters are specified, the ```client.py``` script will connect to a ser
 ### server.py
 
 ```text
-usage: server.py [-h] [--host ROBOT_HOST] [--port ROBOT_PORT] [--user ROBOT_USER] [--pass ROBOT_PASS] [--keyfile ROBOT_KEYFILE] 
-                 [--certfile ROBOT_CERTFILE] [--log-level {TRACE,WARN,NONE,DEBUG,INFO}] [--always-upgrade-packages] [--debug]
+usage: server.py [-h] [--host ROBOT_HOST] [--port ROBOT_PORT] [--user ROBOT_USER] 
+                 [--pass ROBOT_PASS] [--keyfile ROBOT_KEYFILE] 
+                 [--certfile ROBOT_CERTFILE] [--log-level {TRACE,WARN,NONE,DEBUG,INFO}]
+                 [--always-upgrade-packages] [--debug]
 
 options:
   -h, --help            show this help message and exit
@@ -96,7 +98,8 @@ options:
   --always-upgrade-packages
                         If your Robot Framework suite depends on external pip packages, 
                         always upgrade these packages even if they are already installed
-  --debug               Enables debug logging and will not delete the temporary directory after a robot run
+  --debug               Enables debug logging and will not delete the temporary directory
+                        after a robot run
 ```
 
 ## In scope

@@ -48,7 +48,12 @@ IMPORT_LINE_REGEX = re.compile("(Resource|Library)([\\s]+)([^[\\n\\r]*)([\\s]+)"
 
 
 class RemoteFrameworkClient:
-    def __init__(self, remote_connect_string: str, debug=False):
+    def __init__(
+        self,
+        remote_connect_string: str,
+        always_upgrade_server_packages: bool,
+        debug: bool = False,
+    ):
         """
         Constructor for RemoteFrameworkClient
 
@@ -56,6 +61,10 @@ class RemoteFrameworkClient:
         ==========
         remote_connect_string : 'str'
             connect string, containing host, port, user and pass
+        always_upgrade_server_packages: 'bool'
+            Always upgrade pip packages on the server even if they are already installed. This is
+            exquivalent to the server's "always-upgrade-packages" option but allows you to control
+            the upgrade through a client call
         debug: 'bool'
             run in debug mode. Enables extra logging and instructs the remote server not to cleanup the
             workspace after test execution
@@ -66,6 +75,7 @@ class RemoteFrameworkClient:
 
         self._debug = debug
         self._remote_connect_string = remote_connect_string
+        self._always_upgrade_server_packages = always_upgrade_server_packages
         self._dependencies = {}
         self._pip_dependencies = {}
         self._suites = {}
@@ -122,6 +132,7 @@ class RemoteFrameworkClient:
                 self._suites,
                 self._dependencies,
                 self._pip_dependencies,
+                self._always_upgrade_server_packages,
                 robot_arg_dict,
                 self._debug,
             )
@@ -347,6 +358,7 @@ if __name__ == "__main__":
         robot_output_file,
         robot_log_file,
         robot_report_file,
+        robot_always_upgrade_server_packages,
     ) = get_command_line_params_client()
 
     # Set debug level
@@ -427,7 +439,9 @@ if __name__ == "__main__":
 
     # Default branch for executing actual tests
     rfs = RemoteFrameworkClient(
-        remote_connect_string=remote_connect_string, debug=robot_debug
+        remote_connect_string=remote_connect_string,
+        always_upgrade_server_packages=robot_always_upgrade_server_packages,
+        debug=robot_debug,
     )
     result = rfs.execute_run(
         suite_list=robot_input_dir,

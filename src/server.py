@@ -109,6 +109,7 @@ class RobotFrameworkServer:
         test_suites: dict,
         dependencies: dict,
         pip_dependencies: dict,
+        always_upgrade_server_packages: bool,
         robot_args: dict,
         debug=False,
     ):
@@ -123,6 +124,10 @@ class RobotFrameworkServer:
             Dictionary of files the test suites are dependent on
         pip_dependencies: 'list'
             List of pip packages that the user explicitly asked us to install
+        always_upgrade_server_packages: 'bool'
+            Always upgrade pip packages on the server even if they are already installed. This is
+            exquivalent to the server's "always-upgrade-packages" option but allows you to control
+            the upgrade through a client call
         robot_args: 'dict'
             Dictionary of arguments to pass to robot.run()
         debug: 'bool'
@@ -169,8 +174,10 @@ class RobotFrameworkServer:
                     # Check if the package (excluding the version info!) is already installed
                     # If not, collect the entries with potential version info
                     # (but don't install the pip packages yet)
-                    if (pip_package not in installed_pips) or (
-                        robot_always_upgrade_packages
+                    if (
+                        (pip_package not in installed_pips)
+                        or (robot_always_upgrade_packages)
+                        or (always_upgrade_server_packages)
                     ):
                         if pip_dependency not in pips_to_be_installed:
                             pips_to_be_installed.append(pip_dependency)

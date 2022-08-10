@@ -206,13 +206,16 @@ Library         AppriseLibrary               ##### Hello @pip:robotframework-apr
 
 - Client process examines Robot code suites / tests
 - All ```Library``` references which do __not__ refer to external files (e.g. local Python files) and are __not__ part of the Robot Framework standard libraries will be cached by the ```Client``` and later on sent to the ```Server``` (similar to the file-based dependencies)
-- Prior to processing the actual Robot Framework suites and tests, the ```Server``` process has a look at the pip package reference directory from the ```Client```:
-    - Each entry in this directory will be checked against the PyPi packages that are installed on the server's Python environment.
-    - If the package is detected as 'installed', the ```Server``` process will not reinstall the package. 
-    - A version check between installed package version on the ```Server``` and expected package version from the ```Client's``` test suite will __NOT__ be performed __UNLESS__ you activate the ```Server```'s ```---upgrade-server-packages``` option with ```OUTDATED``` setting. 
-    - If you depend on always using the correct PyPi package version (regardless of whether the PyPi package is installed on the server or not), then activate the ```Server's``` ```--always-upgrade-packages``` and/or the ```Client's``` ```--always-upgrade-server-packages``` option. __Note that any use of these options might cause unintended side effects in case you run more than one test in parallel and re-install PyPi dependencies while running tasks at the same time which are dependent on these packages.__ 
-    - If PyPi packages were detected to be installed, the ```Server``` temporarily unsets both ```SSL_CERT_FILE``` and ```REQUESTS_CA_BUNDLE``` environment variables as otherwise, the installation process would fail.
-    - The ```Server``` now installs the requested PyPi packages and restores both ```SSL_CERT_FILE``` and ```REQUESTS_CA_BUNDLE``` environment variables' values
+- ```Server``` lookup process will only start if ```--upgrade-server-packages``` option is NOT set to ```NEVER```. The ```NEVER``` value setting disables __all__ package updates - even if they get requested by the client. 
+- If that option is either set to ```OUTDATED``` or ```ALWAYS```, the ```Server``` process has a look at the pip package reference directory from the ```Client``` and checks if packages need to be installed:
+    - The ```Server``` temporarily unsets both ```SSL_CERT_FILE``` and ```REQUESTS_CA_BUNDLE``` environment variables as otherwise, the Pip installation and lookup process would fail.
+    - Each entry in the ```Client```'s pip directory will be checked against the list of PyPi packages that are installed on the server's Python environment.
+    - If the package is detected as 'installed', the ```Server``` process will not reinstall the package. Exceptions:
+        - Option ```--upgrade-server-packages``` was set to ```ALWAYS``` OR
+        - Option ```--upgrade-server-packages``` was set to ```OUTDATED``` AND a pip version mismatch was detected
+    - __Note that any use of these pip upgrade options might cause unintended side effects in case you run more than one test in parallel and re-install PyPi dependencies while running tasks at the same time which are dependent on these packages.__ 
+    - The ```Server``` now processes any PyPi packages deemed for installation.
+    - The ```Server``` restores both ```SSL_CERT_FILE``` and ```REQUESTS_CA_BUNDLE``` environment variables to their original values
 - Finally, the Robot Framework Suite(s) are executed as usual
 
 ## Testing

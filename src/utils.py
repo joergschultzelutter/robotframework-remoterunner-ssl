@@ -28,9 +28,25 @@ from io import open
 import os
 import re
 import argparse
+from johnnydep.lib import JohnnyDist
+import structlog
+from packaging import version
+import operator
+import logging
 
+# Set up the global logger variable
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(module)s -%(levelname)s- %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 PORT_INC_REGEX = ".*:[0-9]{1,5}$"
+
+# only used by package 'johnnydep'; remove this line if you
+# want to receive the full set of debug information
+structlog.configure(
+    wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING),
+)
 
 
 def read_file_from_disk(path, encoding="utf-8", into_lines=False):
@@ -202,7 +218,7 @@ def get_command_line_params_server():
         help="If your Robot Framework suite depends on external pip packages, always upgrade these packages"
         " on the XMLRPC server even if they are already installed. Similar to the client argument"
         " 'always-upgrade-server-packages' but forces the upgrade for each test (regardless of the client"
-        " settings)."
+        " settings).",
     )
 
     parser.add_argument(
@@ -486,6 +502,82 @@ def get_command_line_params_client():
         robot_report_file,
         robot_always_upgrade_server_packages,
     )
+
+
+def check_for_pip_package_condition(
+    package_name: str, compare_operator: str = "==", specific_version: str = None
+):
+    """
+    Helper method for PyPi pip package version comparison
+
+    Parameters
+    ==========
+    package_name : 'str'
+            Pip package name as listed on PyPi, excluding version info
+    compare_operator: 'str'
+            Pip package compare operator. Default = '=='
+    specific_version: 'str'
+            If specified, the function will verify the installed package version
+            against this version data. If not specified, the latest version from
+            PyPi will be retrieved for the verification purpose
+    Returns
+    =======
+    return_value : 'object'
+            True/False: comparison was successsful/not successful
+            None: error has occurred
+    """
+
+    assert compare_operator in [">", ">=", "<", "<=", "!=", "=="]
+
+    distribution = current = latest = None
+    try:
+        distribution = JohnnyDist(package_name, ignore_errors=True)
+    except:
+        logger.debug(
+            msg=f"Pip package check: package '{package_name}' unavailable on PyPi"
+        )
+        return None
+    if distribution:
+        # get the installed version - this should never cause an error
+        installed = distribution.version_installed
+        # get the remote version on PyPi
+
+        # Check if the user has provided a specific version for comparison reasons
+        # If that is the case, use this version instead of the latest one from PyPi
+        if specific_version:
+            latest = specific_version
+        else:
+            # Try to get the remote version from PyPi
+            try:
+                latest = distribution.version_latest
+            except:
+                latest = None
+
+    # Check if we were able to determine the versions for both the installed package
+    # and the latest/requested package, otherwise return that we were unsuccessful
+    if not latest or not installed:
+        return None
+
+    # Create
+    operator_list = {
+        "<=": operator.lt,
+        "<": operator.le,
+        "==": operator.eq,
+        "!=": operator.ne,
+        ">": operator.gt,
+        ">=": operator.ge,
+    }
+
+    # Parse version string to compare operator
+    try:
+        installed_version = version.parse(installed)
+        latest_version = version.parse(latest)
+    except:
+        return None
+
+    # Make the comparison and return the result to the user
+    result = operator_list[compare_operator](installed_version, latest_version)
+    return result
 
 
 if __name__ == "__main__":

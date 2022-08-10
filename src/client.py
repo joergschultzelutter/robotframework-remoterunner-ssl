@@ -51,7 +51,7 @@ class RemoteFrameworkClient:
     def __init__(
         self,
         remote_connect_string: str,
-        always_upgrade_server_packages: bool,
+        client_enforces_server_package_upgrade: bool,
         debug: bool = False,
     ):
         """
@@ -61,7 +61,7 @@ class RemoteFrameworkClient:
         ==========
         remote_connect_string : 'str'
             connect string, containing host, port, user and pass
-        always_upgrade_server_packages: 'bool'
+        client_enforces_server_package_upgrade: 'bool'
             Always upgrade pip packages on the server even if they are already installed. This is
             exquivalent to the server's "always-upgrade-packages" option but allows you to control
             the upgrade through a client call
@@ -75,7 +75,9 @@ class RemoteFrameworkClient:
 
         self._debug = debug
         self._remote_connect_string = remote_connect_string
-        self._always_upgrade_server_packages = always_upgrade_server_packages
+        self._client_enforces_server_package_upgrade = (
+            client_enforces_server_package_upgrade
+        )
         self._dependencies = {}
         self._pip_dependencies = {}
         self._suites = {}
@@ -132,7 +134,7 @@ class RemoteFrameworkClient:
                 self._suites,
                 self._dependencies,
                 self._pip_dependencies,
-                self._always_upgrade_server_packages,
+                self._client_enforces_server_package_upgrade,
                 robot_arg_dict,
                 self._debug,
             )
@@ -358,7 +360,7 @@ if __name__ == "__main__":
         robot_output_file,
         robot_log_file,
         robot_report_file,
-        robot_always_upgrade_server_packages,
+        robot_client_enforces_server_package_upgrade,
     ) = get_command_line_params_client()
 
     # Set debug level
@@ -440,7 +442,7 @@ if __name__ == "__main__":
     # Default branch for executing actual tests
     rfs = RemoteFrameworkClient(
         remote_connect_string=remote_connect_string,
-        always_upgrade_server_packages=robot_always_upgrade_server_packages,
+        client_enforces_server_package_upgrade=robot_client_enforces_server_package_upgrade,
         debug=robot_debug,
     )
     result = rfs.execute_run(

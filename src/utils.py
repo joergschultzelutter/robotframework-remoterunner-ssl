@@ -212,13 +212,19 @@ def get_command_line_params_server():
     )
 
     parser.add_argument(
-        "--always-upgrade-packages",
-        dest="robot_always_upgrade_packages",
-        action="store_true",
-        help="If your Robot Framework suite depends on external pip packages, always upgrade these packages"
-        " on the XMLRPC server even if they are already installed. Similar to the client argument"
-        " 'always-upgrade-server-packages' but forces the upgrade for each test (regardless of the client"
-        " settings).",
+        "--upgrade-server-packages",
+        choices={"NEVER", "OUTDATED", "ALWAYS"},
+        default="NEVER",
+        type=str.upper,
+        dest="robot_upgrade_server_packages",
+        help="If your Robot Framework suite depends on external pip packages, upgrade these packages"
+        " on the remote XMLRPC server if they are outdated or not installed."
+        " Note that you are still required to specify the version decorator information in the Robot code - "
+        "see documentation. "
+        "Options: NEVER (default) = never upgrade or install pip packages on the server even if the client process "
+        "requests it, OUTDATED = only update if installed version differs from user-specified or latest PyPi version, "
+        "ALWAYS = always update the packages on the server (this is equivalent to the client setting"
+        " --client-enforces-server-package-upgrade but delegates the upgrade request to the server",
     )
 
     parser.add_argument(
@@ -238,7 +244,7 @@ def get_command_line_params_server():
     robot_pass = args.robot_pass
     robot_keyfile = args.robot_keyfile
     robot_certfile = args.robot_certfile
-    robot_always_upgrade_packages = args.robot_always_upgrade_packages
+    robot_upgrade_server_packages = args.robot_upgrade_server_packages
 
     return (
         robot_log_level,
@@ -249,7 +255,7 @@ def get_command_line_params_server():
         robot_pass,
         robot_keyfile,
         robot_certfile,
-        robot_always_upgrade_packages,
+        robot_upgrade_server_packages,
     )
 
 
@@ -435,28 +441,15 @@ def get_command_line_params_client():
     )
 
     parser.add_argument(
-        "--always-upgrade-server-packages",
-        dest="robot_always_upgrade_server_packages",
+        "--client-enforces-server-package-upgrade",
+        dest="robot_client_enforces_server_package_upgrade",
         action="store_true",
-        help="If your Robot Framework suite depends on external pip packages, always upgrade these packages"
+        help="If your Robot Framework suite depends on external pip packages, enabling this switch results in "
+        "always upgrading these packages"
         " on the remote XMLRPC server even if they are already installed. This is the equivalent to the"
-        " server's 'always-upgrade-packages' option which allows you to control a forced update through"
-        " the client.",
-    )
-
-    parser.add_argument(
-        "---upgrade-server-packages",
-        choices={"NEVER", "OUTDATED", "ALWAYS"},
-        default="NEVER",
-        type=str.upper,
-        dest="robot_upgrade_server_packages",
-        help="If your Robot Framework suite depends on external pip packages, always upgrade these packages"
-        " on the remote XMLRPC server even if they are already installed. This is the equivalent to the"
-        " server's 'always-upgrade-packages' option which allows you to control a forced update through"
-        " the client. Requires the user to specify the decorator information in the Robot code"
-        "Options: NEVER (default) = never upgrade server packages even if the client"
-        "requests it, OUTDATED = update if installed version differes from given or latest version,"
-        "ALWAYS = always update the server packages",
+        " server's 'upgrade-server-packages=ALWAYS' option which allows you to control a forced update through"
+        " the client. Note that the server can still disable upgrades completely by setting its 'upgrade-server-packages'"
+        " option to 'NEVER'",
     )
 
     parser.add_argument(
@@ -488,8 +481,9 @@ def get_command_line_params_client():
     robot_output_file = args.robot_output_file
     robot_log_file = args.robot_log_file
     robot_report_file = args.robot_report_file
-    robot_always_upgrade_server_packages = args.robot_always_upgrade_server_packages
-    robot_upgrade_server_packages = args.robot_upgrade_server_packages
+    robot_client_enforces_server_package_upgrade = (
+        args.robot_client_enforces_server_package_upgrade
+    )
 
     # populate defaults in case the user has not specified a value
     # obviously, argparse's 'extend' option does not permit defaults
@@ -516,13 +510,12 @@ def get_command_line_params_client():
         robot_output_file,
         robot_log_file,
         robot_report_file,
-        robot_always_upgrade_server_packages,
-        robot_upgrade_server_packages,
+        robot_client_enforces_server_package_upgrade,
     )
 
 
 def check_for_pip_package_condition(
-    package_name: str, compare_operator: str = "==", specific_version: str = None
+    package_name: str, compare_operator: str, specific_version: str
 ):
     """
     Helper method for PyPi pip package version comparison
@@ -532,11 +525,9 @@ def check_for_pip_package_condition(
     package_name : 'str'
             Pip package name as listed on PyPi, excluding version info
     compare_operator: 'str'
-            Pip package compare operator. Default = '=='
+            Pip package compare operator, e.g. '=='
     specific_version: 'str'
-            If specified, the function will verify the installed package version
-            against this version data. If not specified, the latest version from
-            PyPi will be retrieved for the verification purpose
+            Specific pip version, either numeric format or 'latest'
     Returns
     =======
     return_value : 'object'
@@ -548,34 +539,49 @@ def check_for_pip_package_condition(
 
     distribution = current = latest = None
     try:
-        distribution = JohnnyDist(package_name, ignore_errors=True)
+        logger.debug(msg=f"Requesting pip info for package '{package_name}'")
+        distribution = JohnnyDist(req_string=package_name)
     except:
         logger.debug(
             msg=f"Pip package check: package '{package_name}' unavailable on PyPi"
         )
         return None
     if distribution:
-        # get the installed version - this should never cause an error
+        logger.debug(
+            msg=f"Pip info for package '{package_name}' successfully requested"
+        )
+        # get the installed version - this should never cause an error as we
+        # already know that this package is installed
         installed = distribution.version_installed
-        # get the remote version on PyPi
+        logger.debug(
+            msg=f"Installed version of Pip package '{package_name}': {installed}"
+        )
 
         # Check if the user has provided a specific version for comparison reasons
         # If that is the case, use this version instead of the latest one from PyPi
-        if specific_version:
+        # and do NOT perform a PyPi lookup.
+        if specific_version and specific_version.lower() != "latest":
             latest = specific_version
+            logger.debug(
+                msg=f"Requested version of Pip package '{package_name}': {installed}"
+            )
         else:
-            # Try to get the remote version from PyPi
+            # Try to get the latest remote version from PyPi
             try:
                 latest = distribution.version_latest
+                logger.debug(
+                    msg=f"Latest version of Pip package '{package_name}': {installed}"
+                )
             except:
                 latest = None
 
     # Check if we were able to determine the versions for both the installed package
-    # and the latest/requested package, otherwise return that we were unsuccessful
+    # and the latest/requested package, otherwise return that we were unsuccessful.
+    # It is then up to the caller to decide on what to do.
     if not latest or not installed:
         return None
 
-    # Create
+    # Create a list of operators that we
     operator_list = {
         "<=": operator.lt,
         "<": operator.le,
@@ -594,6 +600,10 @@ def check_for_pip_package_condition(
 
     # Make the comparison and return the result to the user
     result = operator_list[compare_operator](installed_version, latest_version)
+    logger.info(
+        msg=f"Package '{package_name}' comparison: installed version '{installed}' {compare_operator} latest version '{latest}' = '{result}'"
+    )
+
     return result
 
 

@@ -53,6 +53,7 @@ from utils import (
     write_file_to_disk,
     read_file_from_disk,
     get_command_line_params_server,
+    check_for_pip_package_condition,
 )
 import shutil
 import subprocess
@@ -109,7 +110,7 @@ class RobotFrameworkServer:
         test_suites: dict,
         dependencies: dict,
         pip_dependencies: dict,
-        always_upgrade_server_packages: bool,
+        client_enforces_server_package_upgrade: bool,
         robot_args: dict,
         debug=False,
     ):
@@ -124,10 +125,10 @@ class RobotFrameworkServer:
             Dictionary of files the test suites are dependent on
         pip_dependencies: 'list'
             List of pip packages that the user explicitly asked us to install
-        always_upgrade_server_packages: 'bool'
+        client_enforces_server_package_upgrade: 'bool'
             Always upgrade pip packages on the server even if they are already installed. This is
-            exquivalent to the server's "always-upgrade-packages" option but allows you to control
-            the upgrade through a client call
+            equivalent to the server's "upgrade-packages" option but allows you to control
+            the upgrade through the client
         robot_args: 'dict'
             Dictionary of arguments to pass to robot.run()
         debug: 'bool'
@@ -155,9 +156,29 @@ class RobotFrameworkServer:
             os.chdir(workspace_dir)
             sys.path.append(workspace_dir)
 
-            # Install external pip packages in case the
-            # user asked us to do so
-            if len(pip_dependencies) > 0:
+            # Get the current value for our SSL environment variables (if configured)
+            #
+            # These variables might be set in case the user tests on localhost
+            #
+            # Prior to using pip, we need to unset these variables - otherwise,
+            # pip will be unable to install the packages.
+            #
+            # Once the installation process has completed, we restore the original value(s)
+            # whereas present.
+            _SSL_CERT_FILE = os.getenv("SSL_CERT_FILE")
+            _REQUESTS_CA_BUNDLE = os.getenv("REQUESTS_CA_BUNDLE")
+
+            if _SSL_CERT_FILE:
+                logger.debug(msg="Unsetting environment variable 'SSL_CERT_FILE'")
+                os.unsetenv("SSL_CERT_FILE")
+            if _REQUESTS_CA_BUNDLE:
+                logger.debug(msg="Unsetting environment variable 'REQUESTS_CA_BUNDLE'")
+                os.unsetenv("REQUESTS_CA_BUNDLE")
+
+            # Check for external pip packages to be installed in case the
+            # user has enabled pip decorators, but only if the server process
+            # allows us to install them
+            if len(pip_dependencies) > 0 and robot_upgrade_server_packages != "NEVER":
                 logger.info(msg="Starting pip packages installation process ...")
 
                 # get the installed pips
@@ -165,52 +186,93 @@ class RobotFrameworkServer:
                 pips_to_be_installed = []
 
                 for pip_dependency in pip_dependencies.values():
-                    mymatch = re.search(pattern="(\S+)\s*<|>|=", string=pip_dependency)
+
+                    # This is the pip package comparison operator
+                    # which will tell our future package comparison
+                    # about what comparison to use
+                    # If the operator is not specicied, the package version will also
+                    # not be specified, meaning that an 'equal' comparison on the
+                    # latest package on PyPi wioll be performed if the server
+                    # has been instructed to update the package via switch and decorator
+                    pip_operator = None
+
+                    # This is the placeholder for the pip version
+                    # If the operator is not specicied, the package version was
+                    # not be specified per regex, meaning that an 'equal' comparison on the
+                    # latest package on PyPi wioll be performed if the server
+                    # has been instructed to update the package via switch and decorator
+                    pip_version = None
+
+                    # Check if the user has provided the decorator with versioning information
+                    # we already know at this point that we HAVE a decorator
+                    mymatch = re.search(
+                        pattern="(\S+)\s*(<=|<|>=|>)(\S+)", string=pip_dependency
+                    )
                     if mymatch:
                         pip_package = mymatch[1]
+                        pip_operator = mymatch[2]
+                        pip_version = mymatch[3]
                     else:
+                        # use the pip package 'as is', use the
+                        # 'equal' operator and request "latest" package version
                         pip_package = pip_dependency
+                        pip_operator = "=="
+                        pip_version = "latest"
+
+                    # Marker on whether we need to install this package or not
+                    _install_the_package = False
+
+                    # Start with the easy part - check if the package is not installed
+                    if pip_package not in installed_pips:
+                        # set a marker that we want to install this package
+                        _install_the_package = True
+
+                    # we know now that the package is installed
+                    # Check if client process and/or server process always want us
+                    # to apply an update, regardless
+                    if (not _install_the_package) and (
+                        robot_upgrade_server_packages == "ALWAYS"
+                        or client_enforces_server_package_upgrade
+                    ):
+                        # set a marker that we want to install this package
+                        _install_the_package = True
+
+                    # Check if we are in upgrade-only mode
+                    # Only upgrade the package if its version is not in scope of the
+                    # given version specification (or 'latest' pip version)
+                    if (
+                        not _install_the_package
+                        and robot_upgrade_server_packages == "OUTDATED"
+                    ):
+                        # The package is present in the list of our installed packages
+                        # but we need to check its version
+                        #
+                        # Check if our version is installed AND fulfils the version requirements
+                        # True = everything is ok
+                        # False = installed but version does not suffice
+                        # None = (probably) not installed yet - or other error
+                        version_does_suffice = check_for_pip_package_condition(
+                            package_name=pip_package,
+                            compare_operator=pip_operator,
+                            specific_version=pip_version,
+                        )
+                        # Either insufficient version or not installed
+                        if not version_does_suffice:
+                            _install_the_package = True
 
                     # Check if the package (excluding the version info!) is already installed
                     # If not, collect the entries with potential version info
                     # (but don't install the pip packages yet)
-                    if (
-                        (pip_package not in installed_pips)
-                        or (robot_always_upgrade_packages)
-                        or (always_upgrade_server_packages)
-                    ):
+                    if _install_the_package:
                         if pip_dependency not in pips_to_be_installed:
                             pips_to_be_installed.append(pip_dependency)
                     else:
                         logger.debug(
-                            msg=f"Skipping installation of pip package '{pip_dependency}'; already installed"
+                            msg=f"Skipping installation of pip package '{pip_dependency}'"
                         )
 
                 if len(pips_to_be_installed) > 0:
                     logger.info(f"Pip package installation: startup...")
-
-                    # Get the current value for our SSL environment variables (if configured)
-                    #
-                    # These variables might be set in case the user tests on localhost
-                    #
-                    # Prior to using pip, we need to unset these variables - otherwise,
-                    # pip will be unable to install the packages.
-                    #
-                    # Once the installation process has completed, we restore the original value(s)
-                    # whereas present.
-                    _SSL_CERT_FILE = os.getenv("SSL_CERT_FILE")
-                    _REQUESTS_CA_BUNDLE = os.getenv("REQUESTS_CA_BUNDLE")
-
-                    if _SSL_CERT_FILE:
-                        logger.debug(
-                            msg="Unsetting environment variable 'SSL_CERT_FILE'"
-                        )
-                        os.unsetenv("SSL_CERT_FILE")
-                    if _REQUESTS_CA_BUNDLE:
-                        logger.debug(
-                            msg="Unsetting environment variable 'REQUESTS_CA_BUNDLE'"
-                        )
-                        os.unsetenv("REQUESTS_CA_BUNDLE")
 
                     # Install all nonpresent pips. Note that this time, we honor
                     # potential versioning information that the user has specified
@@ -248,21 +310,17 @@ class RobotFrameworkServer:
 
                     logger.info(f"Pip package installation: complete")
 
-                    # now restore our environment parameters whereas necessary
-                    if _SSL_CERT_FILE:
-                        logger.debug(
-                            msg="Restoring environment variable 'SSL_CERT_FILE'"
-                        )
-                        os.environ["SSL_CERT_FILE"] = _SSL_CERT_FILE
-                    if _REQUESTS_CA_BUNDLE:
-                        logger.debug(
-                            msg="Restoring environment variable 'REQUESTS_CA_BUNDLE'"
-                        )
-                        os.environ["REQUESTS_CA_BUNDLE"] = _REQUESTS_CA_BUNDLE
-
                 logger.info(
-                    msg="Successfully finished pip packages installation process!"
+                    msg="Successfully finished pip package installation process!"
                 )
+
+            # now restore our environment parameters whereas necessary
+            if _SSL_CERT_FILE:
+                logger.debug(msg="Restoring environment variable 'SSL_CERT_FILE'")
+                os.environ["SSL_CERT_FILE"] = _SSL_CERT_FILE
+            if _REQUESTS_CA_BUNDLE:
+                logger.debug(msg="Restoring environment variable 'REQUESTS_CA_BUNDLE'")
+                os.environ["REQUESTS_CA_BUNDLE"] = _REQUESTS_CA_BUNDLE
 
             # Execute the robot run
             std_out_err = StringIO()
@@ -602,7 +660,6 @@ if __name__ == "__main__":
         robot_pass,
         robot_keyfile,
         robot_certfile,
-        robot_always_upgrade_packages,
         robot_upgrade_server_packages,
     ) = get_command_line_params_server()
 

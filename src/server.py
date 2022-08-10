@@ -603,6 +603,7 @@ if __name__ == "__main__":
         robot_keyfile,
         robot_certfile,
         robot_always_upgrade_packages,
+        robot_upgrade_server_packages,
     ) = get_command_line_params_server()
 
     # Server init

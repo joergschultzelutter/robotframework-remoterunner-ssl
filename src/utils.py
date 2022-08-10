@@ -445,6 +445,21 @@ def get_command_line_params_client():
     )
 
     parser.add_argument(
+        "---upgrade-server-packages",
+        choices={"NEVER", "OUTDATED", "ALWAYS"},
+        default="NEVER",
+        type=str.upper,
+        dest="robot_upgrade_server_packages",
+        help="If your Robot Framework suite depends on external pip packages, always upgrade these packages"
+        " on the remote XMLRPC server even if they are already installed. This is the equivalent to the"
+        " server's 'always-upgrade-packages' option which allows you to control a forced update through"
+        " the client. Requires the user to specify the decorator information in the Robot code"
+        "Options: NEVER (default) = never upgrade server packages even if the client"
+        "requests it, OUTDATED = update if installed version differes from given or latest version,"
+        "ALWAYS = always update the server packages",
+    )
+
+    parser.add_argument(
         "--debug",
         dest="robot_debug",
         action="store_true",
@@ -474,6 +489,7 @@ def get_command_line_params_client():
     robot_log_file = args.robot_log_file
     robot_report_file = args.robot_report_file
     robot_always_upgrade_server_packages = args.robot_always_upgrade_server_packages
+    robot_upgrade_server_packages = args.robot_upgrade_server_packages
 
     # populate defaults in case the user has not specified a value
     # obviously, argparse's 'extend' option does not permit defaults
@@ -501,6 +517,7 @@ def get_command_line_params_client():
         robot_log_file,
         robot_report_file,
         robot_always_upgrade_server_packages,
+        robot_upgrade_server_packages,
     )
 
 

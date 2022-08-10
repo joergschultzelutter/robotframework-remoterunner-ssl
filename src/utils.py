@@ -219,8 +219,8 @@ def get_command_line_params_server():
         dest="robot_upgrade_server_packages",
         help="If your Robot Framework suite depends on external pip packages, upgrade these packages"
         " on the remote XMLRPC server if they are outdated or not installed."
-        " Note that you are still required to specify the version decorator information in the Robot code - "
-        "see documentation. "
+        " Note that you are still required to specify the version decorator information in the Robot "
+        "Framework code - see program documentation. "
         "Options: NEVER (default) = never upgrade or install pip packages on the server even if the client process "
         "requests it, OUTDATED = only update if installed version differs from user-specified or latest PyPi version, "
         "ALWAYS = always update the packages on the server (this is equivalent to the client setting"

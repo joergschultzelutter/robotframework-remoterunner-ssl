@@ -663,6 +663,17 @@ if __name__ == "__main__":
         robot_upgrade_server_packages,
     ) = get_command_line_params_server()
 
+    logger.info(msg=f"robotframework-remoterunner-ssl: server init ....")
+
+    # Check if the keyfile exists
+    if not os.path.isfile(robot_keyfile):
+        logger.info(msg=f"Keyfile '{robot_keyfile}' does not exist!")
+        sys.exit(0)
+
+    # Check if the certfile exists
+    if not os.path.isfile(robot_certfile):
+        logger.info(msg=f"Certfile '{robot_certfile}' does not exist!")
+
     # Server init
     server = MyXMLRPCServer(ip=robot_host, port=robot_port, logRequests=True)
     # Run the server's main loop

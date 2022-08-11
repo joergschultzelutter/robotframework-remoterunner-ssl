@@ -363,6 +363,8 @@ if __name__ == "__main__":
         robot_client_enforces_server_package_upgrade,
     ) = get_command_line_params_client()
 
+    logger.info(msg=f"robotframework-remoterunner-ssl: client init ....")
+
     # Set debug level
     level = logging.DEBUG if robot_debug else logging.INFO
     logging.basicConfig(

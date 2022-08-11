@@ -8,6 +8,9 @@ This is a Python3 port of [chrisBrookes93](https://github.com/chrisBrookes93)'s 
 
 - Clone repository
 - ```pip install -r requirements.txt```
+- Generate the certificates
+- start ```server.py```
+- run ```client.py```. Ideally, you want to run a connection test first (```--test-connection``` option)
 
 ## Repository contents
 
@@ -198,7 +201,7 @@ Supports all features that are supported by Chris' [robotframework-remoterunner]
 
 - Support for Python version 2
 - When using the server's pip version comparison (```--upgrade-server-packages=OUTDATED```), a version comparison range such as ```mypackage>=1.2.3,<=4.5.6``` is not supported and the program will fail
-- If you enable either the ```Client```'s or the ```Server```'s various pip package upgrade option, is is expected that the server has access to the Internet. The is no magic wand or network proxy code that will enable this connection for you.
+- If you enable either the ```Client```'s or the ```Server```'s various pip package upgrade option, is is expected that the ```Server``` has access to the Internet. The is no magic wand or network proxy code that will establish this connection for you.
 
 ## Connection Test
 
@@ -291,9 +294,7 @@ Library         AppriseLibrary               ##### Hello @pip:robotframework-apr
     - The ```Server``` restores both ```SSL_CERT_FILE``` and ```REQUESTS_CA_BUNDLE``` environment variables to their original values
 - Finally, the Robot Framework Suite(s) are executed as usual
 
-## Testing
-
-### Certificate generation
+## Certificate generation
 
 - Run the [genpubkey.sh](https://github.com/joergschultzelutter/robotframework-remoterunner-mt/blob/master/src/genpubkey.sh) script.
 - For testing on localhost, you can keep all defaults as is. Exception: set the ```FQDN``` setting to value ```localhost``` for both certificates

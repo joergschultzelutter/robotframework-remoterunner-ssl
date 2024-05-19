@@ -517,7 +517,9 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
                     response = myself.server._marshaled_dispatch(
                         data, getattr(myself, "_dispatch", None)
                     )
-                except Exception as info:  # This should only happen if the module is buggy
+                except (
+                    Exception
+                ) as info:  # This should only happen if the module is buggy
                     logger.debug(msg=f"ERROR do_POST: {info}")
                     logger.debug(msg=f"Traceback follows: {traceback.print_exc()}")
 
@@ -630,7 +632,7 @@ class MyXMLRPCServer(CustomThreadingMixIn, SimpleXMLRPCServer):
         request, client_address = self.socket.accept()
         self.rCondition.acquire()
         self.requests += 1
-        self.rCondition.notifyAll()
+        self.rCondition.notify_all()
         self.rCondition.release()
         return (request, client_address)
 

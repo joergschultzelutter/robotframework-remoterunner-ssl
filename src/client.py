@@ -154,7 +154,6 @@ class RemoteFrameworkClient:
 
     @staticmethod
     def _create_test_suite_builder(include_suites, extensions):
-
         """
         Construct a robot.api.TestSuiteBuilder instance. There are argument name/type changes made at
         robotframework==3.2. This function attempts to initialize a TestSuiteBuilder instance assuming
@@ -175,7 +174,9 @@ class RemoteFrameworkClient:
         else:
             split_ext = ["robot"]
         try:
-            builder = TestSuiteBuilder(include_suites, included_extensions=split_ext)
+            builder = TestSuiteBuilder(
+                included_files=include_suites, included_extensions=split_ext
+            )
         except TypeError:
             # Pre robotframework 3.2 API
             builder = TestSuiteBuilder(
